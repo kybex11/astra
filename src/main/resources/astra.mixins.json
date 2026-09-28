@@ -3,7 +3,8 @@
 	"package": "astra.mod.mixin",
 	"compatibilityLevel": "JAVA_8",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"GuiMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

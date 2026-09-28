@@ -17,6 +17,9 @@
 	"entrypoints": {
 		"main": [
 			"astra.mod.Astra"
+		],
+		"client": [
+			"astra.mod.client.AstraClient"
 		]
 	},
 	"mixins": [
