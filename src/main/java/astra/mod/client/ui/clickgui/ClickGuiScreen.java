@@ -9,6 +9,8 @@ import astra.mod.client.setting.ModeSetting;
 import astra.mod.client.setting.NumberSetting;
 import astra.mod.client.setting.Setting;
 import astra.mod.client.theme.ThemeManager;
+import astra.mod.client.module.impl.render.CustomCrosshair;
+import astra.mod.client.ui.crosshair.CrosshairEditorScreen;
 import astra.mod.client.ui.hud.HudEditorScreen;
 import astra.mod.client.util.RenderUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -272,6 +274,13 @@ public class ClickGuiScreen extends Screen {
                     renderSetting(poseStack, setting, cardX + 8, sY, colW - 16, mouseX, mouseY, accent);
                     sY += getSettingHeight(setting);
                 }
+                if (m instanceof CustomCrosshair) {
+                    int btnW = colW - 16;
+                    int btnH = 18;
+                    boolean btnHover = mouseX >= cardX + 8 && mouseX <= cardX + 8 + btnW && mouseY >= sY + 2 && mouseY <= sY + 2 + btnH;
+                    RenderUtils.drawRoundedBorderedRect(poseStack, cardX + 8, sY + 2, btnW, btnH, 4, 1, btnHover ? 0xDD1E1B4B : 0xAA0F172A, btnHover ? accent : 0xFF334155);
+                    font.drawShadow(poseStack, "🎨 Нарисовать прицел (32×32)", cardX + 8 + (btnW - font.width("🎨 Нарисовать прицел (32×32)")) / 2.0f, sY + 7, btnHover ? 0xFFFFFFFF : 0xFFCBD5E1);
+                }
             }
 
             if (isCol1) row1Y += cardH + 8;
@@ -456,6 +465,9 @@ public class ClickGuiScreen extends Screen {
             for (Setting<?> s : m.getSettings()) {
                 h += getSettingHeight(s);
             }
+            if (m instanceof CustomCrosshair) {
+                h += 22;
+            }
         }
         return h;
     }
@@ -593,6 +605,16 @@ public class ClickGuiScreen extends Screen {
                             }
                         }
                         sY += sH;
+                    }
+                    if (m instanceof CustomCrosshair) {
+                        int btnW = colW - 16;
+                        int btnH = 18;
+                        if (mouseX >= cardX + 8 && mouseX <= cardX + 8 + btnW && mouseY >= sY + 2 && mouseY <= sY + 2 + btnH) {
+                            if (minecraft != null) {
+                                minecraft.setScreen(CrosshairEditorScreen.INSTANCE);
+                            }
+                            return true;
+                        }
                     }
                 }
 

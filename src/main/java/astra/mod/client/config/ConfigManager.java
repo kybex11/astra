@@ -80,8 +80,11 @@ public class ConfigManager {
             }
             root.add("modules", modules);
 
-            // 3. Save Theme
+            // 3. Save Theme & Crosshair Canvas
             root.addProperty("theme", ThemeManager.INSTANCE.getCurrentTheme().name());
+            if (astra.mod.client.module.impl.render.CustomCrosshair.INSTANCE != null) {
+                root.addProperty("crosshairCanvas", astra.mod.client.module.impl.render.CustomCrosshair.INSTANCE.serializeCanvas());
+            }
 
             try (FileWriter writer = new FileWriter(getConfigFile())) {
                 GSON.toJson(root, writer);
@@ -155,11 +158,14 @@ public class ConfigManager {
                 }
             }
 
-            // 3. Load Theme
+            // 3. Load Theme & Crosshair Canvas
             if (root.has("theme")) {
                 try {
                     ThemeManager.INSTANCE.setTheme(ThemeManager.Theme.valueOf(root.get("theme").getAsString()));
                 } catch (Exception ignored) {}
+            }
+            if (root.has("crosshairCanvas") && astra.mod.client.module.impl.render.CustomCrosshair.INSTANCE != null) {
+                astra.mod.client.module.impl.render.CustomCrosshair.INSTANCE.deserializeCanvas(root.get("crosshairCanvas").getAsString());
             }
         } catch (Exception e) {
             e.printStackTrace();
