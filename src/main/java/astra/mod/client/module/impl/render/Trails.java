@@ -86,6 +86,12 @@ public class Trails extends Module {
 
         if (renderPoints.size() < 2) return;
 
+        poseStack.pushPose();
+        // Un-rotate camera rotation so trail ribbon is anchored in real 3D world space
+        poseStack.mulPose(com.mojang.math.Vector3f.YP.rotationDegrees(-camera.getYRot() - 180.0F));
+        poseStack.mulPose(com.mojang.math.Vector3f.XP.rotationDegrees(-camera.getXRot()));
+        com.mojang.math.Matrix4f worldMatrix = poseStack.last().pose();
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
@@ -121,12 +127,12 @@ public class Trails extends Module {
                 Vec3 up = new Vec3(0, 1, 0);
                 Vec3 normal = dir.cross(up).normalize().scale(0.12);
 
-                double px = p.x - camPos.x;
-                double py = p.y - camPos.y + 0.15;
-                double pz = p.z - camPos.z;
+                float px = (float) (p.x - camPos.x);
+                float py = (float) (p.y - camPos.y + 0.15);
+                float pz = (float) (p.z - camPos.z);
 
-                buffer.vertex(px - normal.x, py, pz - normal.z).color(r, g, b, (int) (a * 0.35)).endVertex();
-                buffer.vertex(px + normal.x, py + ribbonH, pz + normal.z).color(r, g, b, a).endVertex();
+                buffer.vertex(worldMatrix, px - (float) normal.x, py, pz - (float) normal.z).color(r, g, b, (int) (a * 0.35)).endVertex();
+                buffer.vertex(worldMatrix, px + (float) normal.x, py + ribbonH, pz + (float) normal.z).color(r, g, b, a).endVertex();
             }
 
             tesselator.end();
@@ -144,13 +150,15 @@ public class Trails extends Module {
             int b = color & 0xFF;
             int a = (int) (progress * 255);
 
-            double px = p.x - camPos.x;
-            double py = p.y - camPos.y + 0.15 + (mode.is("Neon Line") ? 0.3 : ribbonH);
-            double pz = p.z - camPos.z;
+            float px = (float) (p.x - camPos.x);
+            float py = (float) (p.y - camPos.y + 0.15 + (mode.is("Neon Line") ? 0.3 : ribbonH));
+            float pz = (float) (p.z - camPos.z);
 
-            buffer.vertex(px, py, pz).color(r, g, b, a).endVertex();
+            buffer.vertex(worldMatrix, px, py, pz).color(r, g, b, a).endVertex();
         }
         tesselator.end();
+
+        poseStack.popPose();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         RenderSystem.depthMask(true);

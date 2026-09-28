@@ -57,6 +57,11 @@ public class LevelRendererMixin {
         double startY = Mth.lerp(partialTicks, mc.player.yOld, mc.player.getY()) - camPos.y + 0.25;
         double startZ = Mth.lerp(partialTicks, mc.player.zOld, mc.player.getZ()) - camPos.z;
 
+        poseStack.pushPose();
+        poseStack.mulPose(Vector3f.YP.rotationDegrees(-camera.getYRot() - 180.0F));
+        poseStack.mulPose(Vector3f.XP.rotationDegrees(-camera.getXRot()));
+        Matrix4f worldMatrix = poseStack.last().pose();
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
@@ -74,9 +79,9 @@ public class LevelRendererMixin {
             Player p = (Player) e;
             if (!p.isAlive()) continue;
 
-            double targetX = Mth.lerp(partialTicks, p.xOld, p.getX()) - camPos.x;
-            double targetY = Mth.lerp(partialTicks, p.yOld, p.getY()) - camPos.y + p.getEyeHeight() * 0.5;
-            double targetZ = Mth.lerp(partialTicks, p.zOld, p.getZ()) - camPos.z;
+            float targetX = (float) (Mth.lerp(partialTicks, p.xOld, p.getX()) - camPos.x);
+            float targetY = (float) (Mth.lerp(partialTicks, p.yOld, p.getY()) - camPos.y + p.getEyeHeight() * 0.5);
+            float targetZ = (float) (Mth.lerp(partialTicks, p.zOld, p.getZ()) - camPos.z);
 
             double dist = mc.player.distanceTo(p);
             int color;
@@ -92,11 +97,13 @@ public class LevelRendererMixin {
             int g = (color >> 8) & 0xFF;
             int b = color & 0xFF;
 
-            buffer.vertex(startX, startY, startZ).color(r, g, b, 200).endVertex();
-            buffer.vertex(targetX, targetY, targetZ).color(r, g, b, 240).endVertex();
+            buffer.vertex(worldMatrix, (float) startX, (float) startY, (float) startZ).color(r, g, b, 200).endVertex();
+            buffer.vertex(worldMatrix, targetX, targetY, targetZ).color(r, g, b, 240).endVertex();
         }
 
         tesselator.end();
+
+        poseStack.popPose();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         RenderSystem.depthMask(true);

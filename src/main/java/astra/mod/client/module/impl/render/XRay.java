@@ -9,8 +9,11 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.math.Matrix4f;
+import com.mojang.math.Vector3f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.util.Mth;
@@ -212,6 +215,12 @@ public class XRay extends Module {
 
         Vec3 camPos = camera.getPosition();
 
+        poseStack.pushPose();
+        // Un-rotate camera view so all vertices are rigidly fixed to real 3D world space
+        poseStack.mulPose(Vector3f.YP.rotationDegrees(-camera.getYRot() - 180.0F));
+        poseStack.mulPose(Vector3f.XP.rotationDegrees(-camera.getXRot()));
+        Matrix4f worldMatrix = poseStack.last().pose();
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
@@ -229,19 +238,19 @@ public class XRay extends Module {
             buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
             for (FoundBlock fb : list) {
                 BlockPos p = fb.pos;
-                double minX = p.getX() - camPos.x;
-                double minY = p.getY() - camPos.y;
-                double minZ = p.getZ() - camPos.z;
-                double maxX = minX + 1.0;
-                double maxY = minY + 1.0;
-                double maxZ = minZ + 1.0;
+                float minX = (float) (p.getX() - camPos.x);
+                float minY = (float) (p.getY() - camPos.y);
+                float minZ = (float) (p.getZ() - camPos.z);
+                float maxX = minX + 1.0f;
+                float maxY = minY + 1.0f;
+                float maxZ = minZ + 1.0f;
 
                 int col = fb.target.color;
                 int r = (col >> 16) & 0xFF;
                 int g = (col >> 8) & 0xFF;
                 int b = col & 0xFF;
 
-                drawBoxQuads(buffer, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, fillA);
+                drawBoxQuads(buffer, worldMatrix, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, fillA);
             }
             tesselator.end();
         }
@@ -254,19 +263,19 @@ public class XRay extends Module {
 
             for (FoundBlock fb : list) {
                 BlockPos p = fb.pos;
-                double minX = p.getX() - camPos.x;
-                double minY = p.getY() - camPos.y;
-                double minZ = p.getZ() - camPos.z;
-                double maxX = minX + 1.0;
-                double maxY = minY + 1.0;
-                double maxZ = minZ + 1.0;
+                float minX = (float) (p.getX() - camPos.x);
+                float minY = (float) (p.getY() - camPos.y);
+                float minZ = (float) (p.getZ() - camPos.z);
+                float maxX = minX + 1.0f;
+                float maxY = minY + 1.0f;
+                float maxZ = minZ + 1.0f;
 
                 int col = fb.target.color;
                 int r = (col >> 16) & 0xFF;
                 int g = (col >> 8) & 0xFF;
                 int b = col & 0xFF;
 
-                drawBoxLines(buffer, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, 230);
+                drawBoxLines(buffer, worldMatrix, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, 230);
             }
             tesselator.end();
             GL11.glDisable(GL11.GL_LINE_SMOOTH);
@@ -274,9 +283,9 @@ public class XRay extends Module {
 
         // 3. Render Tracers to High Priority Ores
         if (tracers.getValue()) {
-            double startX = Mth.lerp(partialTicks, mc.player.xOld, mc.player.getX()) - camPos.x;
-            double startY = Mth.lerp(partialTicks, mc.player.yOld, mc.player.getY()) - camPos.y + 0.25;
-            double startZ = Mth.lerp(partialTicks, mc.player.zOld, mc.player.getZ()) - camPos.z;
+            float startX = (float) (Mth.lerp(partialTicks, mc.player.xOld, mc.player.getX()) - camPos.x);
+            float startY = (float) (Mth.lerp(partialTicks, mc.player.yOld, mc.player.getY()) - camPos.y + 0.25);
+            float startZ = (float) (Mth.lerp(partialTicks, mc.player.zOld, mc.player.getZ()) - camPos.z);
 
             GL11.glEnable(GL11.GL_LINE_SMOOTH);
             GL11.glLineWidth(1.5f);
@@ -288,22 +297,24 @@ public class XRay extends Module {
                 if (++tracerCount > 30) break; // Limit tracers to 30 cleanest lines
 
                 BlockPos p = fb.pos;
-                double tx = p.getX() + 0.5 - camPos.x;
-                double ty = p.getY() + 0.5 - camPos.y;
-                double tz = p.getZ() + 0.5 - camPos.z;
+                float tx = (float) (p.getX() + 0.5 - camPos.x);
+                float ty = (float) (p.getY() + 0.5 - camPos.y);
+                float tz = (float) (p.getZ() + 0.5 - camPos.z);
 
                 int col = fb.target.color;
                 int r = (col >> 16) & 0xFF;
                 int g = (col >> 8) & 0xFF;
                 int b = col & 0xFF;
 
-                buffer.vertex(startX, startY, startZ).color(r, g, b, 180).endVertex();
-                buffer.vertex(tx, ty, tz).color(r, g, b, 240).endVertex();
+                buffer.vertex(worldMatrix, startX, startY, startZ).color(r, g, b, 180).endVertex();
+                buffer.vertex(worldMatrix, tx, ty, tz).color(r, g, b, 240).endVertex();
             }
 
             tesselator.end();
             GL11.glDisable(GL11.GL_LINE_SMOOTH);
         }
+
+        poseStack.popPose();
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
@@ -312,73 +323,73 @@ public class XRay extends Module {
         RenderSystem.disableBlend();
     }
 
-    private static void drawBoxLines(BufferBuilder b, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int r, int g, int blue, int a) {
+    private static void drawBoxLines(BufferBuilder b, Matrix4f mat, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int r, int g, int blue, int a) {
         // Bottom
-        b.vertex(minX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, minZ).color(r, g, blue, a).endVertex();
 
         // Top
-        b.vertex(minX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, minZ).color(r, g, blue, a).endVertex();
 
         // Pillars
-        b.vertex(minX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, maxZ).color(r, g, blue, a).endVertex();
     }
 
-    private static void drawBoxQuads(BufferBuilder b, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int r, int g, int blue, int a) {
+    private static void drawBoxQuads(BufferBuilder b, Matrix4f mat, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int r, int g, int blue, int a) {
         // Bottom (Y-)
-        b.vertex(minX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, maxZ).color(r, g, blue, a).endVertex();
 
         // Top (Y+)
-        b.vertex(minX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, minZ).color(r, g, blue, a).endVertex();
 
         // North (Z-)
-        b.vertex(minX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, minZ).color(r, g, blue, a).endVertex();
 
         // South (Z+)
-        b.vertex(minX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, maxZ).color(r, g, blue, a).endVertex();
 
         // West (X-)
-        b.vertex(minX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, minY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(minX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, minX, maxY, minZ).color(r, g, blue, a).endVertex();
 
         // East (X+)
-        b.vertex(maxX, minY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, minZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
-        b.vertex(maxX, minY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, minZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, maxY, maxZ).color(r, g, blue, a).endVertex();
+        b.vertex(mat, maxX, minY, maxZ).color(r, g, blue, a).endVertex();
     }
 }
