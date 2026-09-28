@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Astra Launcher</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    body {
+      background: #0B0F19;
+      color: #F1F5F9;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Custom Title Bar */
+    .titlebar {
+      height: 38px;
+      background: #111726;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 14px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+
+    .titlebar-brand .star {
+      color: #A855F7;
+      font-size: 16px;
+    }
+
+    .titlebar-controls {
+      display: flex;
+      gap: 4px;
+      -webkit-app-region: no-drag;
+    }
+
+    .titlebar-btn {
+      width: 28px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #94A3B8;
+      transition: all 0.2s;
+    }
+
+    .titlebar-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFF;
+    }
+
+    .titlebar-btn.close:hover {
+      background: #EF4444;
+      color: #FFF;
+    }
+
+    /* Main Container */
+    .app-body {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 38px);
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 200px;
+      background: #0E1322;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 10px;
+      gap: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #94A3B8;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+      background: rgba(124, 58, 237, 0.1);
+      color: #F1F5F9;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(147, 51, 234, 0.15) 100%);
+      color: #C084FC;
+      border-left: 3px solid #A855F7;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 10px;
+      font-size: 11px;
+      color: #64748B;
+      text-align: center;
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 60%);
+    }
+
+    .tab-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, #182035 0%, #111728 100%);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 100%;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #FFF;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-subtitle {
+      font-size: 13px;
+      color: #94A3B8;
+      line-height: 1.5;
+    }
+
+    .feature-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .tag {
+      background: rgba(124, 58, 237, 0.2);
+      color: #C084FC;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Bottom Play Bar */
+    .playbar {
+      height: 74px;
+      background: #0E1322;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .profile-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar-box {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: #FFF;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .input-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748B;
+      letter-spacing: 0.5px;
+    }
+
+    .nick-input {
+      background: #182035;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: #F1F5F9;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      width: 150px;
+      transition: border-color 0.2s;
+    }
+
+    .nick-input:focus {
+      border-color: #A855F7;
+    }
+
+    .ram-select {
+      background: #182035;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: #F1F5F9;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .play-btn {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: #FFF;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 32px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s;
+    }
+
+    .play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45);
+    }
+
+    .play-btn:active {
+      transform: translateY(0);
+    }
+
+    .play-btn:disabled {
+      background: #334155;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Cards & Grid for settings/mods */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .module-card {
+      background: #131A2C;
+      border-radius: 8px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .module-info h4 {
+      font-size: 14px;
+      color: #E2E8F0;
+      margin-bottom: 2px;
+    }
+
+    .module-info p {
+      font-size: 11px;
+      color: #64748B;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .3s;
+      border-radius: 20px;
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider-toggle {
+      background-color: #10B981;
+    }
+
+    input:checked + .slider-toggle:before {
+      transform: translateX(16px);
+    }
+
+    .status-badge {
+      font-size: 11px;
+      color: #10B981;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+  </style>
+  <script src="vue.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Titlebar -->
+    <div class="titlebar">
+      <div class="titlebar-brand">
+        <span class="star">★</span>
+        <span>ASTRA LAUNCHER</span>
+      </div>
+      <div class="titlebar-controls">
+        <div class="titlebar-btn" @click="minimizeWindow">─</div>
+        <div class="titlebar-btn close" @click="closeWindow">✕</div>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="nav-item" :class="{ active: currentTab === 'play' }" @click="currentTab = 'play'">
+          <span>🎮</span>
+          <span>Играть</span>
+        </div>
+        <div class="nav-item" :class="{ active: currentTab === 'mods' }" @click="currentTab = 'mods'">
+          <span>🛡️</span>
+          <span>Модули & PvP</span>
+        </div>
+        <div class="nav-item" :class="{ active: currentTab === 'settings' }" @click="currentTab = 'settings'">
+          <span>⚙</span>
+          <span>Настройки</span>
+        </div>
+        <div class="sidebar-footer">
+          Astra Client v1.16.5<br>Fabric Loader 0.19.5
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="content-area">
+        <!-- TAB 1: PLAY -->
+        <div class="tab-content" v-if="currentTab === 'play'">
+          <div class="hero-banner">
+            <h2 class="hero-title">★ ASTRA CLIENT 1.16.5</h2>
+            <p class="hero-subtitle">
+              Клиент с высокой производительностью, встроенным PvP Текстурпаком, кастомным радаром-миникартой и полным обходом проверок.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">⚡ Быстрый запуск (Офлайн)</span>
+              <span class="tag">⚔️ PvP Режим 1.8</span>
+              <span class="tag">👁️ 3D ESP & Хитбоксы</span>
+              <span class="tag">🗺️ Топографическая Миникарта</span>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="module-card">
+              <div class="module-info">
+                <h4>Клавиша меню в игре</h4>
+                <p>Нажмите Правый Shift для открытия ClickGUI</p>
+              </div>
+              <span class="tag">RSHIFT</span>
+            </div>
+            <div class="module-card">
+              <div class="module-info">
+                <h4>Редактор HUD</h4>
+                <p>Нажмите Правый Alt для перемещения элементов</p>
+              </div>
+              <span class="tag">RALT</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: MODS OVERVIEW -->
+        <div class="tab-content" v-if="currentTab === 'mods'">
+          <h3 style="margin-bottom: 14px; font-size: 16px;">Список активных модулей:</h3>
+          <div class="grid-2">
+            <div class="module-card" v-for="mod in modules" :key="mod.name">
+              <div class="module-info">
+                <h4>{{ mod.name }}</h4>
+                <p>{{ mod.desc }}</p>
+              </div>
+              <span class="tag" style="background: rgba(16, 185, 129, 0.2); color: #34D399; border-color: rgba(16, 185, 129, 0.3);">
+                {{ mod.cat }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: SETTINGS -->
+        <div class="tab-content" v-if="currentTab === 'settings'">
+          <h3 style="margin-bottom: 14px; font-size: 16px;">Параметры запуска:</h3>
+          <div class="grid-2">
+            <div class="module-card">
+              <div class="module-info">
+                <h4>Выделенная память (RAM)</h4>
+                <p>Рекомендуется 4–8 GB для комфортной игры</p>
+              </div>
+              <select v-model="ram" class="ram-select">
+                <option value="2">2 GB</option>
+                <option value="4">4 GB (Стандарт)</option>
+                <option value="6">6 GB</option>
+                <option value="8">8 GB</option>
+                <option value="12">12 GB</option>
+              </select>
+            </div>
+            <div class="module-card">
+              <div class="module-info">
+                <h4>Режим запуска</h4>
+                <p>Прямой запуск Java без интернета</p>
+              </div>
+              <span class="tag">ОФЛАЙН / СЕТЬ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Play Bar -->
+        <div class="playbar">
+          <div class="profile-card">
+            <div class="avatar-box">{{ username.charAt(0).toUpperCase() || 'A' }}</div>
+            <div class="input-group">
+              <span class="input-label">ИГРОВОЙ НИКНЕЙМ:</span>
+              <input type="text" v-model="username" @change="saveNick" class="nick-input" placeholder="Никнейм">
+            </div>
+            <div class="input-group" style="margin-left: 8px;">
+              <span class="input-label">RAM:</span>
+              <select v-model="ram" class="ram-select">
+                <option value="2">2 GB</option>
+                <option value="4">4 GB</option>
+                <option value="6">6 GB</option>
+                <option value="8">8 GB</option>
+                <option value="12">12 GB</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span class="status-badge" v-if="statusMessage">{{ statusMessage }}</span>
+            <button class="play-btn" :disabled="isLaunching" @click="launchGame">
+              <span>▶</span>
+              <span>{{ isLaunching ? 'ЗАПУСК...' : 'ИГРАТЬ' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const app = Vue.createApp({
+      data() {
+        return {
+          currentTab: 'play',
+          username: localStorage.getItem('astra_username') || 'AstraPlayer',
+          ram: localStorage.getItem('astra_ram') || '4',
+          isLaunching: false,
+          statusMessage: '● Готов к запуску',
+          modules: [
+            { name: 'KillAura', desc: 'Умная автоматическая атака врагов', cat: 'Combat' },
+            { name: 'Velocity', desc: 'Настройка анти-отталкивания (Anti-KB)', cat: 'Combat' },
+            { name: 'Reach', desc: 'Увеличенная дистанция ударов', cat: 'Combat' },
+            { name: 'AutoTotem', desc: 'Быстрая замена тотема во вторую руку', cat: 'Player' },
+            { name: 'FastPlace', desc: 'Режим строительства и быстрой установки блоков', cat: 'Player' },
+            { name: 'ESP & Tracers', desc: '3D боксы, полоса здоровья и линии к целям', cat: 'Render' },
+            { name: 'MiniMap', desc: 'Топографический радар с видом сверху на мир', cat: 'Render' },
+            { name: 'FastRender', desc: 'Оптимизация фризов и отсечение сущностей', cat: 'Render' }
+          ]
+        };
+      },
+      methods: {
+        saveNick() {
+          localStorage.setItem('astra_username', this.username);
+          localStorage.setItem('astra_ram', this.ram);
+        },
+        minimizeWindow() {
+          ipcRenderer.send('window-min');
+        },
+        closeWindow() {
+          ipcRenderer.send('window-close');
+        },
+        launchGame() {
+          this.saveNick();
+          this.isLaunching = true;
+          this.statusMessage = '⏳ Запуск Minecraft...';
+
+          ipcRenderer.send('launch-game', {
+            username: this.username,
+            ram: parseInt(this.ram)
+          });
+        }
+      },
+      mounted() {
+        ipcRenderer.on('launch-status', (event, res) => {
+          this.isLaunching = false;
+          this.statusMessage = '✓ ' + res.message;
+        });
+      }
+    });
+
+    app.mount('#app');
+  </script>
+</body>
+</html>

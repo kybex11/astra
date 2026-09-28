@@ -12,6 +12,7 @@ public class ThemeManager {
         CRIMSON("Crimson", 0xFFEF4444, 0xFFDC2626, 0xFFB91C1C),
         SUNSET("Sunset", 0xFFF97316, 0xFFF59E0B, 0xFFD97706),
         SAKURA("Sakura", 0xFFEC4899, 0xFFA855F7, 0xFFDB2777),
+        OBSIDIAN("Obsidian Dark", 0xFF94A3B8, 0xFF64748B, 0xFF1E293B),
         CHROMA("Rainbow", 0, 0, 0);
 
         private final String displayName;

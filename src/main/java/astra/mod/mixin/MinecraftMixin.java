@@ -16,4 +16,14 @@ public class MinecraftMixin {
             cir.setReturnValue(true);
         }
     }
+
+    @Inject(method = "allowsMultiplayer", at = @At("HEAD"), cancellable = true)
+    private void onAllowsMultiplayer(CallbackInfoReturnable<Boolean> cir) {
+        cir.setReturnValue(true);
+    }
+
+    @Inject(method = "allowsChat", at = @At("HEAD"), cancellable = true)
+    private void onAllowsChat(CallbackInfoReturnable<Boolean> cir) {
+        cir.setReturnValue(true);
+    }
 }

@@ -11,7 +11,7 @@ public class TargetHUD extends Module {
     public final BooleanSetting gradientHealth = new BooleanSetting("Gradient", "Градиентная полоса здоровья", true);
 
     public TargetHUD() {
-        super("TargetHUD", "Информационная панель текущей цели в бою", Category.RENDER);
+        super("TargetHUD", "Информационная панель текущей цели в бою", Category.HUD);
         INSTANCE = this;
         addSettings(showArmor, gradientHealth);
         setEnabled(true);

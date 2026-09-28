@@ -13,7 +13,18 @@
 		"MinecraftMixin",
 		"ScreenMixin",
 		"PlayerMixin",
-		"AbstractClientPlayerMixin"
+		"AbstractClientPlayerMixin",
+		"KeyboardHandlerMixin",
+		"LevelMixin",
+		"TitleScreenMixin",
+		"PauseScreenMixin",
+		"LoadingOverlayMixin",
+		"ChatScreenMixin",
+		"LocalPlayerMixin",
+		"ClientPacketListenerMixin",
+		"LevelRendererMixin",
+		"AbstractWidgetMixin",
+		"AbstractContainerScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -7,7 +7,7 @@ public class CPSMod extends Module {
     public static CPSMod INSTANCE;
 
     public CPSMod() {
-        super("CPS", "Индикатор количества кликов в секунду", Category.RENDER);
+        super("CPS", "Индикатор количества кликов в секунду", Category.HUD);
         INSTANCE = this;
         setEnabled(true);
     }

@@ -10,6 +10,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AbstractClientPlayer.class)
 public class AbstractClientPlayerMixin {
+    @Inject(method = "isCapeLoaded", at = @At("HEAD"), cancellable = true)
+    private void onIsCapeLoaded(CallbackInfoReturnable<Boolean> cir) {
+        if (CosmeticManager.INSTANCE.isCapeEnabled()) {
+            cir.setReturnValue(true);
+        }
+    }
+
     @Inject(method = "getCloakTextureLocation", at = @At("HEAD"), cancellable = true)
     private void onGetCloak(CallbackInfoReturnable<ResourceLocation> cir) {
         if (CosmeticManager.INSTANCE.isCapeEnabled()) {
@@ -17,3 +24,4 @@ public class AbstractClientPlayerMixin {
         }
     }
 }
+

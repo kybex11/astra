@@ -11,7 +11,7 @@ public class ArmorHUD extends Module {
     public final BooleanSetting horizontal = new BooleanSetting("Horizontal", "Горизонтальное отображение", true);
 
     public ArmorHUD() {
-        super("ArmorHUD", "Отображает надетую броню и предмет в руке с прочностью", Category.RENDER);
+        super("ArmorHUD", "Отображает надетую броню и предмет в руке с прочностью", Category.HUD);
         INSTANCE = this;
         addSettings(showDurability, horizontal);
         setEnabled(true);

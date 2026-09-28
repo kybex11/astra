@@ -9,6 +9,7 @@ import astra.mod.client.setting.ModeSetting;
 import astra.mod.client.setting.NumberSetting;
 import astra.mod.client.setting.Setting;
 import astra.mod.client.theme.ThemeManager;
+import astra.mod.client.ui.hud.HudEditorScreen;
 import astra.mod.client.util.RenderUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
@@ -23,12 +24,14 @@ public class ClickGuiScreen extends Screen {
     public static final ClickGuiScreen INSTANCE = new ClickGuiScreen();
 
     private enum WebTab {
-        COMBAT(Category.COMBAT, "⚔ Combat"),
-        MOVEMENT(Category.MOVEMENT, "⚡ Movement"),
-        RENDER(Category.RENDER, "👁 Render"),
-        PLAYER(Category.PLAYER, "🎮 Player"),
-        THEMES(null, "🎨 Themes"),
-        PROFILE(null, "👤 Profile & Cape");
+        COMBAT(Category.COMBAT, "[PvP] Сражения"),
+        BUILD(Category.BUILD, "[BLD] Стройка"),
+        MOVEMENT(Category.MOVEMENT, "[MOV] Движение"),
+        RENDER(Category.RENDER, "[VIS] Визуалы"),
+        HUD(Category.HUD, "[HUD] Интерфейс"),
+        PLAYER(Category.PLAYER, "[PLY] Игрок"),
+        THEMES(null, "[THM] Темы"),
+        PROFILE(null, "[PRF] Профиль & Плащ");
 
         final Category category;
         final String title;
@@ -42,10 +45,15 @@ public class ClickGuiScreen extends Screen {
     private WebTab currentTab = WebTab.COMBAT;
     private final Map<Module, Boolean> expandedModules = new HashMap<>();
 
-    // Draggable sliders & text input state
+    // Draggable sliders, text input & keybinding state
     private NumberSetting draggingNumber = null;
+    private Module bindingModule = null;
     private boolean editingNick = false;
     private String nickInput = "";
+    private boolean editingSearch = false;
+    private String searchInput = "";
+    private int scrollY = 0;
+    private long openTime = 0;
 
     public ClickGuiScreen() {
         super(new TextComponent("Astra Dashboard"));
@@ -56,6 +64,17 @@ public class ClickGuiScreen extends Screen {
         super.init();
         ParticleEngine.INSTANCE.init(width, height);
         nickInput = CosmeticManager.INSTANCE.getCustomName();
+        scrollY = 0;
+        bindingModule = null;
+        editingSearch = false;
+        openTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        scrollY += (int) (amount * 24);
+        if (scrollY > 0) scrollY = 0;
+        return true;
     }
 
     @Override
@@ -64,42 +83,61 @@ public class ClickGuiScreen extends Screen {
         int accentDark = ThemeManager.INSTANCE.getAccentDark();
 
         // 1. Fullscreen dark backdrop
-        RenderUtils.drawRect(poseStack, 0, 0, width, height, 0x9905070B);
+        RenderUtils.drawRect(poseStack, 0, 0, width, height, 0xAA05070B);
 
-        // 2. Cosmic background particles
-        ParticleEngine.INSTANCE.render(poseStack);
+        // 2. Interactive neural particles
+        ParticleEngine.INSTANCE.renderWithMouse(poseStack, mouseX, mouseY);
+
+        float animProgress = Math.min(1.0f, (System.currentTimeMillis() - openTime) / 180.0f);
+        float ease = (float) Math.sin(animProgress * Math.PI / 2.0);
+        float scaleAnim = 0.92f + 0.08f * ease;
+
+        poseStack.pushPose();
+        poseStack.translate(width / 2.0, height / 2.0, 0);
+        poseStack.scale(scaleAnim, scaleAnim, 1.0f);
+        poseStack.translate(-width / 2.0, -height / 2.0, 0);
 
         // 3. Central Web Window Container
-        int winW = Math.min(540, width - 20);
-        int winH = Math.min(360, height - 20);
+        int winW = Math.min(560, width - 20);
+        int winH = Math.min(370, height - 20);
         int winX = (width - winW) / 2;
         int winY = (height - winH) / 2;
 
-        // Window drop shadow & outer border
-        RenderUtils.drawBorderedRect(poseStack, winX, winY, winW, winH, 1, 0xF50B0E14, 0x44334155);
+        RenderUtils.drawBorderedRect(poseStack, winX, winY, winW, winH, 1, 0xF80B0F19, 0xFF334155);
 
-        // 4. Web Browser Window Header Bar (height: 28px)
+        // 4. Header Bar
         int headerH = 28;
         RenderUtils.drawRect(poseStack, winX, winY, winW, headerH, 0xFF0F172A);
-        RenderUtils.drawRect(poseStack, winX, winY + headerH - 1, winW, 1, 0x33475569);
+        RenderUtils.drawRect(poseStack, winX, winY + headerH - 1, winW, 1, 0xFF334155);
 
-        // Browser traffic light control dots
-        RenderUtils.drawRect(poseStack, winX + 12, winY + 10, 8, 8, 0xFFEF4444); // Red
-        RenderUtils.drawRect(poseStack, winX + 24, winY + 10, 8, 8, 0xFFF59E0B); // Yellow
-        RenderUtils.drawRect(poseStack, winX + 36, winY + 10, 8, 8, 0xFF10B981); // Green
+        font.drawShadow(poseStack, "★ ASTRA CLIENT", winX + 12, winY + 10, accent);
 
-        // Browser URL search bar
-        int urlW = Math.min(220, winW - 140);
-        int urlX = winX + 54;
-        int urlY = winY + 5;
-        RenderUtils.drawBorderedRect(poseStack, urlX, urlY, urlW, 18, 1, 0xFF0A0F1D, 0x44475569);
-        font.drawShadow(poseStack, "🔒 astra://client/dashboard", urlX + 8, urlY + 5, 0xFF94A3B8);
+        int searchW = Math.min(180, winW - 250);
+        int searchX = winX + 115;
+        int searchY = winY + 5;
+        boolean searchHover = mouseX >= searchX && mouseX <= searchX + searchW && mouseY >= searchY && mouseY <= searchY + 18;
+        RenderUtils.drawBorderedRect(poseStack, searchX, searchY, searchW, 18, 1, 0xFF0A0F1D, editingSearch ? accent : (searchHover ? 0xFF475569 : 0xFF334155));
 
-        // Top right close button
+        String searchDisplayText = searchInput.isEmpty() ? (editingSearch ? "|" : "🔍 Поиск модулей...") : ("🔍 " + searchInput + (editingSearch ? "_" : ""));
+        int searchTextColor = searchInput.isEmpty() ? 0xFF64748B : 0xFFCBD5E1;
+        font.drawShadow(poseStack, searchDisplayText, searchX + 6, searchY + 5, searchTextColor);
+        if (!searchInput.isEmpty()) {
+            font.drawShadow(poseStack, "✕", searchX + searchW - 14, searchY + 5, 0xFF94A3B8);
+        }
+
+        // HUD Editor Button
+        int hudBtnW = 95;
+        int hudBtnX = winX + winW - hudBtnW - 32;
+        int hudBtnY = winY + 5;
+        boolean hudHover = mouseX >= hudBtnX && mouseX <= hudBtnX + hudBtnW && mouseY >= hudBtnY && mouseY <= hudBtnY + 18;
+        RenderUtils.drawBorderedRect(poseStack, hudBtnX, hudBtnY, hudBtnW, 18, 1, hudHover ? 0xDD1E293B : 0xAA0F172A, hudHover ? accent : 0xFF334155);
+        font.drawShadow(poseStack, "📐 Редактор HUD", hudBtnX + 6, hudBtnY + 5, hudHover ? 0xFFFFFFFF : 0xFFCBD5E1);
+
+        // Close Button
         boolean closeHovered = mouseX >= winX + winW - 24 && mouseX <= winX + winW - 8 && mouseY >= winY + 6 && mouseY <= winY + 22;
         font.drawShadow(poseStack, "✕", winX + winW - 20, winY + 9, closeHovered ? 0xFFEF4444 : 0xFF64748B);
 
-        // 5. Left Sidebar Navigation (width: 125px)
+        // 5. Left Sidebar Navigation
         int sideW = 125;
         int contentX = winX + sideW;
         int contentY = winY + headerH;
@@ -107,9 +145,9 @@ public class ClickGuiScreen extends Screen {
         int contentH = winH - headerH;
 
         RenderUtils.drawRect(poseStack, winX, contentY, sideW, contentH, 0xFF0D111A);
-        RenderUtils.drawRect(poseStack, contentX - 1, contentY, 1, contentH, 0x22FFFFFF);
+        RenderUtils.drawRect(poseStack, contentX - 1, contentY, 1, contentH, 0xFF334155);
+        RenderUtils.drawRect(poseStack, contentX, contentY, contentW, contentH, 0xF80B0F19);
 
-        // Render Tabs
         int tabY = contentY + 10;
         for (WebTab tab : WebTab.values()) {
             boolean active = (tab == currentTab);
@@ -123,29 +161,59 @@ public class ClickGuiScreen extends Screen {
             }
 
             int textCol = active ? 0xFFFFFFFF : (hovered ? 0xFFE2E8F0 : 0xFF94A3B8);
-            font.drawShadow(poseStack, tab.title, winX + 14, tabY + 7, textCol);
+            font.drawShadow(poseStack, tab.title, winX + 10, tabY + 7, textCol);
 
             tabY += 26;
         }
 
-        // 6. Right Content Area (Modules / Themes / Profile)
+        // 6. Right Content Area with Scissor Clipping
+        double scale = minecraft.getWindow().getGuiScale();
+        int scissorX = (int) (contentX * scale);
+        int scissorY = (int) ((height - (contentY + contentH)) * scale);
+        int scissorW = (int) (contentW * scale);
+        int scissorH = (int) (contentH * scale);
+
+        com.mojang.blaze3d.systems.RenderSystem.enableScissor(scissorX, scissorY, scissorW, scissorH);
+
         if (currentTab.category != null) {
             renderModuleCards(poseStack, currentTab.category, contentX + 10, contentY + 10, contentW - 20, mouseX, mouseY, accent, accentDark);
         } else if (currentTab == WebTab.THEMES) {
-            renderThemesTab(poseStack, contentX + 10, contentY + 10, contentW - 20, mouseX, mouseY, accent);
+            renderThemesTab(poseStack, contentX + 10, contentY + 10 + scrollY, contentW - 20, mouseX, mouseY, accent);
         } else if (currentTab == WebTab.PROFILE) {
-            renderProfileTab(poseStack, contentX + 10, contentY + 10, contentW - 20, mouseX, mouseY, accent);
+            renderProfileTab(poseStack, contentX + 10, contentY + 10 + scrollY, contentW - 20, mouseX, mouseY, accent);
         }
+
+        com.mojang.blaze3d.systems.RenderSystem.disableScissor();
+
+        poseStack.popPose();
 
         super.render(poseStack, mouseX, mouseY, delta);
     }
 
+    private List<Module> getDisplayedModules(Category category) {
+        String query = searchInput.trim().toLowerCase();
+        if (query.isEmpty()) {
+            return category != null ? ModuleManager.INSTANCE.getModulesByCategory(category) : java.util.Collections.emptyList();
+        }
+        List<Module> res = new java.util.ArrayList<>();
+        for (Module m : ModuleManager.INSTANCE.getModules()) {
+            if (m.getName().toLowerCase().contains(query) || m.getDescription().toLowerCase().contains(query)) {
+                res.add(m);
+            }
+        }
+        return res;
+    }
+
     private void renderModuleCards(PoseStack poseStack, Category category, int cx, int cy, int cw, int mouseX, int mouseY, int accent, int accentDark) {
-        List<Module> modules = ModuleManager.INSTANCE.getModulesByCategory(category);
+        List<Module> modules = getDisplayedModules(category);
+        if (modules.isEmpty()) {
+            font.drawShadow(poseStack, "Ничего не найдено по запросу \"" + searchInput + "\"", cx + 10, cy + 20, 0xFF94A3B8);
+            return;
+        }
         int colW = (cw - 10) / 2;
 
-        int row0Y = cy;
-        int row1Y = cy;
+        int row0Y = cy + scrollY;
+        int row1Y = cy + scrollY;
 
         for (int i = 0; i < modules.size(); i++) {
             Module m = modules.get(i);
@@ -156,10 +224,9 @@ public class ClickGuiScreen extends Screen {
             boolean expanded = expandedModules.getOrDefault(m, false);
             int cardH = getCardHeight(m, expanded);
 
-            // Card background & modern rounded border
             boolean cardHover = mouseX >= cardX && mouseX <= cardX + colW && mouseY >= cardY && mouseY <= cardY + cardH;
-            int cardBg = m.isEnabled() ? 0xDD111827 : 0xBB0B0F19;
-            int borderCol = m.isEnabled() ? accent : (cardHover ? 0x66475569 : 0x22334155);
+            int cardBg = m.isEnabled() ? 0xEE111827 : 0xEE0B0F19;
+            int borderCol = m.isEnabled() ? accent : (cardHover ? 0xFF64748B : 0xFF223348);
 
             RenderUtils.drawBorderedRect(poseStack, cardX, cardY, colW, cardH, 1, cardBg, borderCol);
 
@@ -167,25 +234,38 @@ public class ClickGuiScreen extends Screen {
                 RenderUtils.drawRect(poseStack, cardX + 1, cardY + 1, 2, 34, accent);
             }
 
-            // Card Title & Toggle
-            font.drawShadow(poseStack, m.getName(), cardX + 10, cardY + 7, m.isEnabled() ? 0xFFFFFFFF : 0xFFCBD5E1);
+            // Badge & Name
+            String badge = getModuleIcon(m);
+            font.drawShadow(poseStack, badge, cardX + 8, cardY + 7, accent);
+            font.drawShadow(poseStack, m.getName(), cardX + font.width(badge) + 12, cardY + 7, m.isEnabled() ? 0xFFFFFFFF : 0xFFCBD5E1);
 
-            // Settings gear / arrow
+            // Bind Pill Button
+            String bindText = (bindingModule == m) ? "[...]" : ((m.getKeyCode() > 0 || m.getKeyCode() < -90) ? "[" + getKeyName(m.getKeyCode()) + "]" : "[None]");
+            int bindW = font.width(bindText) + 6;
+            int bindX = cardX + colW - bindW - 28;
+            int bindY = cardY + 6;
+            boolean bindHover = mouseX >= bindX && mouseX <= bindX + bindW && mouseY >= bindY && mouseY <= bindY + 11;
+            int bindColor = (bindingModule == m) ? 0xFFF59E0B : ((m.getKeyCode() > 0 || m.getKeyCode() < -90) ? 0xFF818CF8 : 0xFF64748B);
+
+            RenderUtils.drawBorderedRect(poseStack, bindX, bindY, bindW, 11, 1, bindHover ? 0xDD1E293B : 0x660F172A, bindColor);
+            font.drawShadow(poseStack, bindText, bindX + 3, bindY + 2, bindColor);
+
+            // Switch
+            RenderUtils.drawSwitch(poseStack, cardX + colW - 24, cardY + 6, 18, 10, m.isEnabled());
+
+            // Expand Arrow
             if (!m.getSettings().isEmpty()) {
-                font.drawShadow(poseStack, expanded ? "▼" : "▶", cardX + colW - 38, cardY + 8, 0xFF64748B);
+                font.drawShadow(poseStack, expanded ? "▼" : "▶", cardX + colW - 22, cardY + 22, 0xFF64748B);
             }
 
-            // iOS-style switch
-            RenderUtils.drawSwitch(poseStack, cardX + colW - 26, cardY + 6, 18, 10, m.isEnabled());
-
-            // Card description
+            // Description
             String desc = m.getDescription();
-            if (font.width(desc) > colW - 20) {
-                desc = font.plainSubstrByWidth(desc, colW - 24) + "...";
+            if (font.width(desc) > colW - 36) {
+                desc = font.plainSubstrByWidth(desc, colW - 40) + "...";
             }
-            font.drawShadow(poseStack, desc, cardX + 10, cardY + 22, 0xFF64748B);
+            font.drawShadow(poseStack, desc, cardX + 8, cardY + 22, 0xFF64748B);
 
-            // Expanded settings inside card container
+            // Expanded settings
             if (expanded) {
                 int sY = cardY + 36;
                 for (Setting<?> setting : m.getSettings()) {
@@ -194,12 +274,83 @@ public class ClickGuiScreen extends Screen {
                 }
             }
 
-            if (isCol1) {
-                row1Y += cardH + 8;
-            } else {
-                row0Y += cardH + 8;
-            }
+            if (isCol1) row1Y += cardH + 8;
+            else row0Y += cardH + 8;
         }
+    }
+
+    private String getModuleIcon(Module m) {
+        String name = m.getName();
+        switch (name) {
+            case "KillAura": return "[AURA]";
+            case "AimAssist": return "[AIM]";
+            case "AutoClicker": return "[AUTO]";
+            case "Entity Launcher": return "[LNCH]";
+            case "Velocity": return "[KB]";
+            case "Reach": return "[RCH]";
+            case "Sprint": return "[RUN]";
+            case "FastClimb": return "[CLIMB]";
+            case "Fly": return "[FLY]";
+            case "Speed": return "[SPD]";
+            case "FreeLook": return "[CAM]";
+            case "Fullbright": return "[GLOW]";
+            case "ESP": return "[ESP]";
+            case "HUD": return "[HUD]";
+            case "ComboCounter": return "[COMBO]";
+            case "Keystrokes": return "[KEYS]";
+            case "ArmorHUD": return "[ARMR]";
+            case "TargetHUD": return "[TARG]";
+            case "CPSMod": return "[CPS]";
+            case "FPSMod": return "[FPS]";
+            case "CustomCrosshair": return "[XHAIR]";
+            case "NoHurtCam": return "[NOCAM]";
+            case "WeatherChanger": return "[WTHR]";
+            case "TimeChanger": return "[TIME]";
+            case "ClickGui": return "[GUI]";
+            case "DarkTheme": return "[DARK]";
+            case "MiniMap": return "[RADAR]";
+            case "FastRender": return "[BOOST]";
+            case "NoRender": return "[NOVIS]";
+            case "Trails": return "[TRAIL]";
+            case "NoFall": return "[FALL]";
+            case "FastPlace": return "[FAST]";
+            case "Scaffold": return "[BUILD]";
+            case "NoHunger": return "[HUNGER]";
+            case "GodMode": return "[GOD]";
+            case "AutoTotem": return "[TOTEM]";
+            case "KeySounds": return "[MECH]";
+            case "AntiSwimming": return "[JESUS]";
+            case "AntiFire": return "[FIRE]";
+            default: return "[MOD]";
+        }
+    }
+
+    private String getKeyName(int keyCode) {
+        if (keyCode <= 0 && keyCode >= -90) return "None";
+        if (keyCode < -90) {
+            int mouseBtn = -100 - keyCode;
+            if (mouseBtn == 0) return "M1";
+            if (mouseBtn == 1) return "M2";
+            if (mouseBtn == 2) return "M3";
+            return "M" + (mouseBtn + 1);
+        }
+        if (keyCode == GLFW.GLFW_KEY_UNKNOWN || keyCode <= 0) return "None";
+        String name = GLFW.glfwGetKeyName(keyCode, 0);
+        if (name != null && !name.trim().isEmpty()) return name.toUpperCase();
+        if (keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) return "RSHIFT";
+        if (keyCode == GLFW.GLFW_KEY_LEFT_SHIFT) return "LSHIFT";
+        if (keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) return "RCTRL";
+        if (keyCode == GLFW.GLFW_KEY_LEFT_CONTROL) return "LCTRL";
+        if (keyCode == GLFW.GLFW_KEY_RIGHT_ALT) return "RALT";
+        if (keyCode == GLFW.GLFW_KEY_LEFT_ALT) return "LALT";
+        if (keyCode == GLFW.GLFW_KEY_SPACE) return "SPACE";
+        if (keyCode == GLFW.GLFW_KEY_TAB) return "TAB";
+        if (keyCode == GLFW.GLFW_KEY_CAPS_LOCK) return "CAPS";
+        if (keyCode == GLFW.GLFW_KEY_UP) return "UP";
+        if (keyCode == GLFW.GLFW_KEY_DOWN) return "DOWN";
+        if (keyCode == GLFW.GLFW_KEY_LEFT) return "LEFT";
+        if (keyCode == GLFW.GLFW_KEY_RIGHT) return "RIGHT";
+        return "KEY_" + keyCode;
     }
 
     private void renderSetting(PoseStack poseStack, Setting<?> setting, int sx, int sy, int sw, int mouseX, int mouseY, int accent) {
@@ -221,8 +372,9 @@ public class ClickGuiScreen extends Screen {
 
             if (draggingNumber == ns) {
                 double mouseProgress = (double) (mouseX - (sx + 6)) / (double) (sw - 12);
+                mouseProgress = Math.max(0.0, Math.min(1.0, mouseProgress));
                 double val = ns.getMin() + mouseProgress * (ns.getMax() - ns.getMin());
-                ns.setValue(val);
+                ns.setValue(Math.round(val * 10.0) / 10.0);
             }
         } else if (setting instanceof ModeSetting) {
             ModeSetting ms = (ModeSetting) setting;
@@ -249,11 +401,10 @@ public class ClickGuiScreen extends Screen {
             boolean active = (ThemeManager.INSTANCE.getCurrentTheme() == theme);
             boolean hover = mouseX >= x && mouseX <= x + cardW && mouseY >= y && mouseY <= y + cardH;
 
-            RenderUtils.drawBorderedRect(poseStack, x, y, cardW, cardH, 1, active ? 0xDD1E1B4B : 0xBB0F172A, active ? accent : 0x33475569);
+            RenderUtils.drawRoundedBorderedRect(poseStack, x, y, cardW, cardH, 4, 1, active ? 0xDD1E1B4B : 0xBB0F172A, active ? accent : 0x33475569);
 
-            // Color circle preview
             int dotColor = (theme == ThemeManager.Theme.CHROMA) ? ThemeManager.getRainbow(0) : theme.getPrimary();
-            RenderUtils.drawRect(poseStack, x + 8, y + 8, 12, 12, dotColor);
+            RenderUtils.drawCircle(poseStack, x + 14, y + 14, 6, dotColor);
 
             font.drawShadow(poseStack, theme.getDisplayName(), x + 26, y + 10, active ? 0xFFFFFFFF : 0xFFCBD5E1);
             if (active) {
@@ -261,10 +412,9 @@ public class ClickGuiScreen extends Screen {
             }
         }
 
-        // Particle toggle card
         int partY = gridY + 145;
-        RenderUtils.drawBorderedRect(poseStack, cx, partY, cw, 30, 1, 0xBB0F172A, 0x33475569);
-        font.drawShadow(poseStack, "Космические фоновые частицы", cx + 12, partY + 10, 0xFFFFFFFF);
+        RenderUtils.drawRoundedBorderedRect(poseStack, cx, partY, cw, 30, 6, 1, 0xBB0F172A, 0x33475569);
+        font.drawShadow(poseStack, "Космические фоновые частицы (Нейронная сеть)", cx + 12, partY + 10, 0xFFFFFFFF);
         RenderUtils.drawSwitch(poseStack, cx + cw - 32, partY + 9, 20, 12, ThemeManager.INSTANCE.isParticles());
     }
 
@@ -272,35 +422,31 @@ public class ClickGuiScreen extends Screen {
         font.drawShadow(poseStack, "ПРОФИЛЬ, ВИЗУАЛЬНЫЙ НИК И КОСМЕТИКА", cx, cy, 0xFFFFFFFF);
         font.drawShadow(poseStack, "Работает на любых серверах в сетевой игре (Multiplayer)", cx, cy + 12, 0xFF64748B);
 
-        // Card 1: Visual Nick Changer
         int nickY = cy + 30;
-        RenderUtils.drawBorderedRect(poseStack, cx, nickY, cw, 60, 1, 0xBB0F172A, 0x33475569);
+        RenderUtils.drawRoundedBorderedRect(poseStack, cx, nickY, cw, 60, 6, 1, 0xBB0F172A, 0x33475569);
         font.drawShadow(poseStack, "Визуальная смена ника", cx + 12, nickY + 10, 0xFFFFFFFF);
 
         int inputX = cx + 12;
         int inputY = nickY + 28;
         int inputW = cw - 90;
-        RenderUtils.drawBorderedRect(poseStack, inputX, inputY, inputW, 20, 1, 0xFF0A0F1D, editingNick ? accent : 0x44475569);
+        RenderUtils.drawRoundedBorderedRect(poseStack, inputX, inputY, inputW, 20, 4, 1, 0xFF0A0F1D, editingNick ? accent : 0x44475569);
 
         String displayNick = nickInput.isEmpty() ? (editingNick ? "" : "Введите ваш новый ник...") : nickInput;
         font.drawShadow(poseStack, displayNick, inputX + 6, inputY + 6, nickInput.isEmpty() ? 0xFF64748B : 0xFFFFFFFF);
 
-        // Apply Nick Button
         int btnX = inputX + inputW + 8;
-        RenderUtils.drawBorderedRect(poseStack, btnX, inputY, 60, 20, 1, 0xEE1E1B4B, accent);
+        RenderUtils.drawRoundedBorderedRect(poseStack, btnX, inputY, 60, 20, 4, 1, 0xEE1E1B4B, accent);
         font.drawShadow(poseStack, "Применить", btnX + 6, inputY + 6, 0xFFFFFFFF);
 
-        // Card 2: Visual Astra Cape
         int capeY = nickY + 70;
-        RenderUtils.drawBorderedRect(poseStack, cx, capeY, cw, 42, 1, 0xBB0F172A, 0x33475569);
-        font.drawShadow(poseStack, "Фирменный плащ Astra Cosmic Cape", cx + 12, capeY + 10, 0xFFFFFFFF);
-        font.drawShadow(poseStack, "Отображает космический плащ за спиной", cx + 12, capeY + 22, 0xFF64748B);
+        RenderUtils.drawRoundedBorderedRect(poseStack, cx, capeY, cw, 42, 6, 1, 0xBB0F172A, 0x33475569);
+        font.drawShadow(poseStack, "Фирменный плащ Astra Cosmic HD Cape", cx + 12, capeY + 10, 0xFFFFFFFF);
+        font.drawShadow(poseStack, "Отображает HD космический плащ за спиной", cx + 12, capeY + 22, 0xFF64748B);
         RenderUtils.drawSwitch(poseStack, cx + cw - 32, capeY + 15, 20, 12, CosmeticManager.INSTANCE.isCapeEnabled());
 
-        // Card 3: Built-in PvP Pack Status
         int pvpY = capeY + 52;
-        RenderUtils.drawBorderedRect(poseStack, cx, pvpY, cw, 42, 1, 0xBB0F172A, 0x33475569);
-        font.drawShadow(poseStack, "Встроенный ресурс-пак Astra PvP Pack", cx + 12, pvpY + 10, 0xFFFFFFFF);
+        RenderUtils.drawRoundedBorderedRect(poseStack, cx, pvpY, cw, 42, 6, 1, 0xBB0F172A, 0x33475569);
+        font.drawShadow(poseStack, "Встроенный ресурс-пак Astra Esports PvP Pack", cx + 12, pvpY + 10, 0xFFFFFFFF);
         font.drawShadow(poseStack, "Статус: Всегда активен по умолчанию [OK]", cx + 12, pvpY + 22, 0xFF10B981);
     }
 
@@ -320,19 +466,49 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int winW = Math.min(540, width - 20);
-        int winH = Math.min(360, height - 20);
+        if (bindingModule != null) {
+            bindingModule.setKeyCode(-100 - button);
+            bindingModule = null;
+            astra.mod.client.config.ConfigManager.INSTANCE.save();
+            return true;
+        }
+
+        int winW = Math.min(560, width - 20);
+        int winH = Math.min(370, height - 20);
         int winX = (width - winW) / 2;
         int winY = (height - winH) / 2;
         int headerH = 28;
 
-        // Close button click
+        int hudBtnW = 95;
+        int hudBtnX = winX + winW - hudBtnW - 32;
+        int hudBtnY = winY + 5;
+        if (mouseX >= hudBtnX && mouseX <= hudBtnX + hudBtnW && mouseY >= hudBtnY && mouseY <= hudBtnY + 18) {
+            if (minecraft != null) {
+                minecraft.setScreen(HudEditorScreen.INSTANCE);
+            }
+            return true;
+        }
+
+        int searchW = Math.min(180, winW - 250);
+        int searchX = winX + 115;
+        int searchY = winY + 5;
+        if (mouseX >= searchX && mouseX <= searchX + searchW && mouseY >= searchY && mouseY <= searchY + 18) {
+            if (!searchInput.isEmpty() && mouseX >= searchX + searchW - 16) {
+                searchInput = "";
+            } else {
+                editingSearch = true;
+                editingNick = false;
+            }
+            return true;
+        } else {
+            editingSearch = false;
+        }
+
         if (mouseX >= winX + winW - 24 && mouseX <= winX + winW - 8 && mouseY >= winY + 6 && mouseY <= winY + 22) {
             onClose();
             return true;
         }
 
-        // Tabs click
         int sideW = 125;
         int tabY = winY + headerH + 10;
         for (WebTab tab : WebTab.values()) {
@@ -347,12 +523,17 @@ public class ClickGuiScreen extends Screen {
         int contentX = winX + sideW;
         int contentY = winY + headerH;
         int contentW = winW - sideW;
+        int contentH = winH - headerH;
 
-        if (currentTab.category != null) {
-            List<Module> modules = ModuleManager.INSTANCE.getModulesByCategory(currentTab.category);
+        if (mouseX < contentX || mouseX > contentX + contentW || mouseY < contentY || mouseY > contentY + contentH) {
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+
+        if (currentTab.category != null || !searchInput.trim().isEmpty()) {
+            List<Module> modules = getDisplayedModules(currentTab.category);
             int colW = (contentW - 30) / 2;
-            int row0Y = contentY + 10;
-            int row1Y = contentY + 10;
+            int row0Y = contentY + 10 + scrollY;
+            int row1Y = contentY + 10 + scrollY;
 
             for (int i = 0; i < modules.size(); i++) {
                 Module m = modules.get(i);
@@ -363,19 +544,31 @@ public class ClickGuiScreen extends Screen {
                 boolean expanded = expandedModules.getOrDefault(m, false);
                 int cardH = getCardHeight(m, expanded);
 
+                // Check bind button click
+                String bindText = (bindingModule == m) ? "[...]" : (m.getKeyCode() != 0 ? "[" + getKeyName(m.getKeyCode()) + "]" : "[BIND]");
+                int bindW = font.width(bindText) + 6;
+                int bindX = cardX + colW - bindW - 28;
+                int bindY = cardY + 6;
+                if (mouseX >= bindX && mouseX <= bindX + bindW && mouseY >= bindY && mouseY <= bindY + 11) {
+                    bindingModule = (bindingModule == m) ? null : m;
+                    return true;
+                }
+
                 if (mouseX >= cardX && mouseX <= cardX + colW && mouseY >= cardY && mouseY <= cardY + 36) {
-                    if (button == 0) { // Toggle module
+                    if (button == 0) {
                         m.toggle();
                         return true;
-                    } else if (button == 1) { // Expand/collapse settings
+                    } else if (button == 1) {
                         if (!m.getSettings().isEmpty()) {
                             expandedModules.put(m, !expanded);
                             return true;
                         }
+                    } else if (button == 2) {
+                        bindingModule = (bindingModule == m) ? null : m;
+                        return true;
                     }
                 }
 
-                // Clicks inside settings
                 if (expanded) {
                     int sY = cardY + 36;
                     for (Setting<?> setting : m.getSettings()) {
@@ -390,8 +583,9 @@ public class ClickGuiScreen extends Screen {
                                 NumberSetting ns = (NumberSetting) setting;
                                 draggingNumber = ns;
                                 double mouseProgress = (mouseX - (sx + 6)) / (double) (sw - 12);
+                                mouseProgress = Math.max(0.0, Math.min(1.0, mouseProgress));
                                 double val = ns.getMin() + mouseProgress * (ns.getMax() - ns.getMin());
-                                ns.setValue(val);
+                                ns.setValue(Math.round(val * 10.0) / 10.0);
                                 return true;
                             } else if (setting instanceof ModeSetting && (button == 0 || button == 1)) {
                                 ((ModeSetting) setting).cycle();
@@ -418,7 +612,6 @@ public class ClickGuiScreen extends Screen {
                 }
             }
 
-            // Particle toggle click
             int partY = gridY + 145;
             if (mouseX >= contentX + 10 && mouseX <= contentX + contentW - 10 && mouseY >= partY && mouseY <= partY + 30) {
                 ThemeManager.INSTANCE.setParticles(!ThemeManager.INSTANCE.isParticles());
@@ -430,7 +623,6 @@ public class ClickGuiScreen extends Screen {
             int inputY = nickY + 28;
             int inputW = contentW - 110;
 
-            // Nick input click
             if (mouseX >= inputX && mouseX <= inputX + inputW && mouseY >= inputY && mouseY <= inputY + 20) {
                 editingNick = true;
                 return true;
@@ -438,14 +630,12 @@ public class ClickGuiScreen extends Screen {
                 editingNick = false;
             }
 
-            // Apply button click
             int btnX = inputX + inputW + 8;
             if (mouseX >= btnX && mouseX <= btnX + 60 && mouseY >= inputY && mouseY <= inputY + 20) {
-                CosmeticManager.INSTANCE.setCustomName(nickInput);
+                CosmeticManager.INSTANCE.setSystemNick(nickInput);
                 return true;
             }
 
-            // Cape toggle click
             int capeY = nickY + 70;
             if (mouseX >= contentX + 10 && mouseX <= contentX + contentW - 10 && mouseY >= capeY && mouseY <= capeY + 42) {
                 CosmeticManager.INSTANCE.setCapeEnabled(!CosmeticManager.INSTANCE.isCapeEnabled());
@@ -464,6 +654,12 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        if (editingSearch) {
+            if (searchInput.length() < 30 && (Character.isLetterOrDigit(codePoint) || Character.isWhitespace(codePoint) || codePoint == '_' || codePoint == '-')) {
+                searchInput += codePoint;
+                return true;
+            }
+        }
         if (editingNick) {
             if (nickInput.length() < 16 && (Character.isLetterOrDigit(codePoint) || codePoint == '_')) {
                 nickInput += codePoint;
@@ -475,12 +671,33 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (bindingModule != null) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_DELETE || keyCode == GLFW.GLFW_KEY_BACKSPACE) {
+                bindingModule.setKeyCode(0);
+            } else {
+                bindingModule.setKeyCode(keyCode);
+            }
+            bindingModule = null;
+            astra.mod.client.config.ConfigManager.INSTANCE.save();
+            return true;
+        }
+
+        if (editingSearch) {
+            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !searchInput.isEmpty()) {
+                searchInput = searchInput.substring(0, searchInput.length() - 1);
+                return true;
+            } else if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                editingSearch = false;
+                return true;
+            }
+        }
+
         if (editingNick) {
             if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !nickInput.isEmpty()) {
                 nickInput = nickInput.substring(0, nickInput.length() - 1);
                 return true;
             } else if (keyCode == GLFW.GLFW_KEY_ENTER) {
-                CosmeticManager.INSTANCE.setCustomName(nickInput);
+                CosmeticManager.INSTANCE.setSystemNick(nickInput);
                 editingNick = false;
                 return true;
             } else if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
@@ -494,6 +711,12 @@ public class ClickGuiScreen extends Screen {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public void onClose() {
+        astra.mod.client.config.ConfigManager.INSTANCE.save();
+        super.onClose();
     }
 
     @Override

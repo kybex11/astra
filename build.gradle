@@ -11,6 +11,16 @@ repositories {
 	// for more information about repositories.
 }
 
+loom {
+	runs {
+		client {
+			if (project.hasProperty('username')) {
+				programArgs "--username", "${project.property('username')}"
+			}
+		}
+	}
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"

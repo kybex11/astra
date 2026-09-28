@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.EntityHitResult;
 import org.lwjgl.glfw.GLFW;
@@ -35,7 +36,7 @@ public class HudRenderer {
         // 1. Lunar-Style Keystrokes
         renderKeystrokes(poseStack, font, accent);
 
-        // 2. Lunar-Style FPS & CPS Pills (top-left, cleanly styled)
+        // 2. Lunar-Style FPS, CPS & Combo Pills
         renderPills(poseStack, font, accent);
 
         // 3. Lunar-Style ArmorHUD
@@ -44,10 +45,10 @@ public class HudRenderer {
         // 4. Lunar-Style TargetHUD
         renderTargetHUD(poseStack, font, accent, accentSec);
 
-        // 5. Custom Crosshair
-        renderCrosshair(poseStack, mc);
+        // 5. MiniMap / Full Rect Radar
+        renderMiniMap(poseStack, font, accent);
 
-        // 6. Active Modules (ArrayList) on the right side
+        // 7. Active Modules (ArrayList) on the right side
         renderArrayList(poseStack, font, mc);
     }
 
@@ -58,15 +59,19 @@ public class HudRenderer {
         Minecraft mc = Minecraft.getInstance();
         long window = mc.getWindow().getWindow();
 
-        int startX = ks.x.getValue().intValue();
-        int startY = ks.y.getValue().intValue();
+        float scale = HudConfig.INSTANCE.getScale("keystrokes");
+        poseStack.pushPose();
+        poseStack.scale(scale, scale, 1.0f);
+
+        int startX = (int) (HudConfig.INSTANCE.keystrokesX / scale);
+        int startY = (int) (HudConfig.INSTANCE.keystrokesY / scale);
 
         boolean w = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_W);
         boolean a = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_A);
         boolean s = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_S);
         boolean d = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_D);
-        boolean lmb = InputConstants.isKeyDown(window, GLFW.GLFW_MOUSE_BUTTON_LEFT);
-        boolean rmb = InputConstants.isKeyDown(window, GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+        boolean lmb = mc.options.keyAttack.isDown() || (GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS);
+        boolean rmb = mc.options.keyUse.isDown() || (GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS);
         boolean space = InputConstants.isKeyDown(window, GLFW.GLFW_KEY_SPACE);
 
         // Row 1: W
@@ -79,7 +84,7 @@ public class HudRenderer {
 
         int nextY = startY + 44;
 
-        // Row 3: LMB & RMB (with CPS)
+        // Row 3: LMB & RMB
         if (ks.showMouse.getValue()) {
             String lText = ks.showCPS.getValue() ? (ks.getLeftCPS() + " CPS") : "LMB";
             String rText = ks.showCPS.getValue() ? (ks.getRightCPS() + " CPS") : "RMB";
@@ -92,6 +97,8 @@ public class HudRenderer {
         if (ks.showSpace.getValue()) {
             drawKey(poseStack, font, "—", startX, nextY, 64, 13, space, accent);
         }
+
+        poseStack.popPose();
     }
 
     private void drawKey(PoseStack poseStack, Font font, String text, int x, int y, int w, int h, boolean pressed, int accent) {
@@ -106,26 +113,51 @@ public class HudRenderer {
 
     private void renderPills(PoseStack poseStack, Font font, int accent) {
         Minecraft mc = Minecraft.getInstance();
-        int pillX = 8;
-        int pillY = 8;
 
         // FPS Pill
         if (FPSMod.INSTANCE != null && FPSMod.INSTANCE.isEnabled()) {
+            float scale = HudConfig.INSTANCE.getScale("fps");
+            poseStack.pushPose();
+            poseStack.scale(scale, scale, 1.0f);
+            int fpsPillX = (int) (HudConfig.INSTANCE.fpsX / scale);
+            int fpsPillY = (int) (HudConfig.INSTANCE.fpsY / scale);
             String fps = mc.fpsString.split(" ")[0] + " FPS";
             int w = font.width(fps) + 12;
-            RenderUtils.drawBorderedRect(poseStack, pillX, pillY, w, 15, 1, 0xAA0F172A, 0x44334155);
-            RenderUtils.drawRect(poseStack, pillX, pillY, 2, 15, accent);
-            font.drawShadow(poseStack, fps, pillX + 6, pillY + 4, 0xFFFFFFFF);
-            pillX += w + 6;
+            RenderUtils.drawBorderedRect(poseStack, fpsPillX, fpsPillY, w, 15, 1, 0xAA0F172A, 0x44334155);
+            RenderUtils.drawRect(poseStack, fpsPillX, fpsPillY, 2, 15, accent);
+            font.drawShadow(poseStack, fps, fpsPillX + 6, fpsPillY + 4, 0xFFFFFFFF);
+            poseStack.popPose();
         }
 
         // CPS Pill
         if (CPSMod.INSTANCE != null && CPSMod.INSTANCE.isEnabled() && Keystrokes.INSTANCE != null) {
+            float scale = HudConfig.INSTANCE.getScale("cps");
+            poseStack.pushPose();
+            poseStack.scale(scale, scale, 1.0f);
+            int cpsPillX = (int) (HudConfig.INSTANCE.cpsX / scale);
+            int cpsPillY = (int) (HudConfig.INSTANCE.cpsY / scale);
             String cps = Keystrokes.INSTANCE.getLeftCPS() + " | " + Keystrokes.INSTANCE.getRightCPS() + " CPS";
             int w = font.width(cps) + 12;
-            RenderUtils.drawBorderedRect(poseStack, pillX, pillY, w, 15, 1, 0xAA0F172A, 0x44334155);
-            RenderUtils.drawRect(poseStack, pillX, pillY, 2, 15, accent);
-            font.drawShadow(poseStack, cps, pillX + 6, pillY + 4, 0xFFFFFFFF);
+            RenderUtils.drawBorderedRect(poseStack, cpsPillX, cpsPillY, w, 15, 1, 0xAA0F172A, 0x44334155);
+            RenderUtils.drawRect(poseStack, cpsPillX, cpsPillY, 2, 15, accent);
+            font.drawShadow(poseStack, cps, cpsPillX + 6, cpsPillY + 4, 0xFFFFFFFF);
+            poseStack.popPose();
+        }
+
+        // Combo Counter Pill
+        if (ComboCounter.INSTANCE != null && ComboCounter.INSTANCE.isEnabled()) {
+            float scale = HudConfig.INSTANCE.getScale("combo");
+            poseStack.pushPose();
+            poseStack.scale(scale, scale, 1.0f);
+            int comboPillX = (int) (HudConfig.INSTANCE.comboX / scale);
+            int comboPillY = (int) (HudConfig.INSTANCE.comboY / scale);
+            int combo = ComboCounter.INSTANCE.getCombo();
+            String comboText = "Combo: " + combo;
+            int w = font.width(comboText) + 12;
+            RenderUtils.drawBorderedRect(poseStack, comboPillX, comboPillY, w, 15, 1, 0xAA0F172A, 0x44334155);
+            RenderUtils.drawRect(poseStack, comboPillX, comboPillY, 2, 15, combo > 0 ? 0xFF10B981 : accent);
+            font.drawShadow(poseStack, comboText, comboPillX + 6, comboPillY + 4, combo > 0 ? 0xFF34D399 : 0xFFFFFFFF);
+            poseStack.popPose();
         }
     }
 
@@ -140,20 +172,22 @@ public class HudRenderer {
         int screenH = mc.getWindow().getGuiScaledHeight();
 
         List<ItemStack> items = new ArrayList<>();
-        // Equipped Armor (helmet, chest, legs, boots)
         for (int i = 3; i >= 0; i--) {
             ItemStack stack = mc.player.inventory.armor.get(i);
             if (!stack.isEmpty()) items.add(stack);
         }
-        // Main hand item
         if (!mc.player.getMainHandItem().isEmpty()) {
             items.add(mc.player.getMainHandItem());
         }
 
         if (items.isEmpty()) return;
 
-        int startX = screenW / 2 + 95;
-        int startY = screenH - 22;
+        float scale = HudConfig.INSTANCE.getScale("armor");
+        poseStack.pushPose();
+        poseStack.scale(scale, scale, 1.0f);
+
+        int startX = (int) ((HudConfig.INSTANCE.armorX == -1 ? (screenW / 2 + 95) : HudConfig.INSTANCE.armorX) / scale);
+        int startY = (int) ((HudConfig.INSTANCE.armorY == -1 ? (screenH - 22) : HudConfig.INSTANCE.armorY) / scale);
 
         RenderSystem.enableBlend();
         for (ItemStack stack : items) {
@@ -170,6 +204,7 @@ public class HudRenderer {
 
             startX += 18;
         }
+        poseStack.popPose();
     }
 
     private int getDurabilityColor(int percent) {
@@ -194,75 +229,45 @@ public class HudRenderer {
         }
 
         if (entity != null) {
+            float scale = HudConfig.INSTANCE.getScale("target");
+            poseStack.pushPose();
+            poseStack.scale(scale, scale, 1.0f);
 
-                int screenW = mc.getWindow().getGuiScaledWidth();
-                int screenH = mc.getWindow().getGuiScaledHeight();
+            int screenW = mc.getWindow().getGuiScaledWidth();
+            int screenH = mc.getWindow().getGuiScaledHeight();
 
-                int cardW = 140;
-                int cardH = 42;
-                int cardX = (screenW - cardW) / 2;
-                int cardY = screenH / 2 + 30;
+            int cardW = 140;
+            int cardH = 42;
+            int cardX = (int) ((HudConfig.INSTANCE.targetX == -1 ? ((screenW - cardW) / 2) : HudConfig.INSTANCE.targetX) / scale);
+            int cardY = (int) ((HudConfig.INSTANCE.targetY == -1 ? (screenH / 2 + 30) : HudConfig.INSTANCE.targetY) / scale);
 
-                // Card background
-                RenderUtils.drawBorderedRect(poseStack, cardX, cardY, cardW, cardH, 1, 0xDD0F172A, 0xFF334155);
+            RenderUtils.drawBorderedRect(poseStack, cardX, cardY, cardW, cardH, 1, 0xDD0F172A, 0xFF334155);
 
-                // Target Name & Distance
-                String name = entity.getName().getString();
-                font.drawShadow(poseStack, name, cardX + 10, cardY + 8, 0xFFFFFFFF);
+            String name = entity.getName().getString();
+            font.drawShadow(poseStack, name, cardX + 10, cardY + 8, 0xFFFFFFFF);
 
-                float dist = (float) Math.round(mc.player.distanceTo(entity) * 10.0f) / 10.0f;
-                String distStr = dist + "m";
-                font.drawShadow(poseStack, distStr, cardX + cardW - font.width(distStr) - 10, cardY + 8, 0xFF94A3B8);
+            float dist = (float) Math.round(mc.player.distanceTo(entity) * 10.0f) / 10.0f;
+            String distStr = dist + "m";
+            font.drawShadow(poseStack, distStr, cardX + cardW - font.width(distStr) - 10, cardY + 8, 0xFF94A3B8);
 
-                // Health Bar
-                float health = Math.max(0.0f, entity.getHealth());
-                float maxHealth = Math.max(1.0f, entity.getMaxHealth());
-                double healthProgress = Math.min(1.0, health / maxHealth);
+            float health = Math.max(0.0f, entity.getHealth());
+            float maxHealth = Math.max(1.0f, entity.getMaxHealth());
+            double healthProgress = Math.min(1.0, health / maxHealth);
 
-                int barX = cardX + 10;
-                int barY = cardY + 24;
-                int barW = cardW - 20;
-                int barH = 8;
+            int barX = cardX + 10;
+            int barY = cardY + 24;
+            int barW = cardW - 20;
+            int barH = 8;
 
-                RenderUtils.drawRect(poseStack, barX, barY, barW, barH, 0xFF1E293B);
-                int fillW = (int) Math.round(barW * healthProgress);
-                if (fillW > 0) {
-                    RenderUtils.drawGradientH(poseStack, barX, barY, fillW, barH, accent, accentSec);
-                }
-
-                // Health text overlay
-                String hpText = (int) health + " HP";
-                font.drawShadow(poseStack, hpText, barX + (barW - font.width(hpText)) / 2.0f, barY, 0xFFFFFFFF);
+            RenderUtils.drawRect(poseStack, barX, barY, barW, barH, 0xFF1E293B);
+            int fillW = (int) Math.round(barW * healthProgress);
+            if (fillW > 0) {
+                RenderUtils.drawGradientH(poseStack, barX, barY, fillW, barH, accent, accentSec);
             }
-        }
 
-    private void renderCrosshair(PoseStack poseStack, Minecraft mc) {
-        CustomCrosshair ch = CustomCrosshair.INSTANCE;
-        if (ch == null || !ch.isEnabled()) return;
-
-        int cx = mc.getWindow().getGuiScaledWidth() / 2;
-        int cy = mc.getWindow().getGuiScaledHeight() / 2;
-
-        int size = ch.size.getValue().intValue();
-        int gap = ch.gap.getValue().intValue();
-        int color = 0xFF000000 | (ThemeManager.INSTANCE.getAccent() & 0x00FFFFFF);
-
-        // Center dot
-        if (ch.dot.getValue()) {
-            RenderUtils.drawRect(poseStack, cx, cy, 1, 1, 0xFFFFFFFF);
-        }
-
-        if (ch.style.is("Cross")) {
-            // Top
-            RenderUtils.drawRect(poseStack, cx, cy - gap - size, 1, size, color);
-            // Bottom
-            RenderUtils.drawRect(poseStack, cx, cy + gap + 1, 1, size, color);
-            // Left
-            RenderUtils.drawRect(poseStack, cx - gap - size, cy, size, 1, color);
-            // Right
-            RenderUtils.drawRect(poseStack, cx + gap + 1, cy, size, 1, color);
-        } else if (ch.style.is("Box")) {
-            RenderUtils.drawBorder(poseStack, cx - size, cy - size, size * 2 + 1, size * 2 + 1, 1, color);
+            String hpText = (int) health + " HP";
+            font.drawShadow(poseStack, hpText, barX + (barW - font.width(hpText)) / 2.0f, barY, 0xFFFFFFFF);
+            poseStack.popPose();
         }
     }
 
@@ -291,9 +296,7 @@ public class HudRenderer {
                     ? ThemeManager.getRainbow(offset * 200)
                     : ThemeManager.INSTANCE.getAccent();
 
-            // Module pill background
             RenderUtils.drawRect(poseStack, cardX, currentY, cardW, cardH, 0xAA0F172A);
-            // Right accent bar
             RenderUtils.drawRect(poseStack, cardX + cardW - 2, currentY, 2, cardH, color);
 
             font.drawShadow(poseStack, text, cardX + 4, currentY + 3, color);
@@ -301,5 +304,116 @@ public class HudRenderer {
             currentY += cardH + 2;
             offset++;
         }
+    }
+
+    private void renderMiniMap(PoseStack poseStack, Font font, int accent) {
+        MiniMap mm = MiniMap.INSTANCE;
+        if (mm == null || !mm.isEnabled()) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
+
+        float scale = HudConfig.INSTANCE.getScale("minimap");
+        poseStack.pushPose();
+        poseStack.scale(scale, scale, 1.0f);
+
+        int mapX = (int) (HudConfig.INSTANCE.miniMapX / scale);
+        int mapY = (int) (HudConfig.INSTANCE.miniMapY / scale);
+        int mapSize = (int) mm.size.getValue().doubleValue();
+        float radius = mapSize / 2.0f;
+        float cx = mapX + radius;
+        float cy = mapY + radius;
+        double range = mm.range.getValue();
+
+        // 1. Full Square container utilization
+        RenderUtils.drawBorderedRect(poseStack, mapX, mapY, mapSize, mapSize, 1, 0xF00B0F19, 0xFF334155);
+
+        // 2. Surface Mapping
+        int playerX = (int) mc.player.getX();
+        int playerY = (int) mc.player.getY();
+        int playerZ = (int) mc.player.getZ();
+        int intRange = (int) range;
+        int step = Math.max(1, intRange / 24);
+
+        for (int rX = -intRange; rX <= intRange; rX += step) {
+            for (int rZ = -intRange; rZ <= intRange; rZ += step) {
+                int worldX = playerX + rX;
+                int worldZ = playerZ + rZ;
+                net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(worldX, playerY, worldZ);
+
+                net.minecraft.world.level.block.state.BlockState state = mc.level.getBlockState(pos);
+                int mapCol = state.getMaterial().getColor().col;
+                if (mapCol == 0) {
+                    mapCol = mc.level.getBlockState(pos.below()).getMaterial().getColor().col;
+                }
+                if (mapCol == 0) mapCol = 0x2D3748;
+
+                float px = cx + ((float) rX / (float) intRange) * (radius - 4);
+                float py = cy + ((float) rZ / (float) intRange) * (radius - 4);
+                int pixelSize = Math.max(1, (int) Math.ceil((radius - 4) / (intRange / (float) step)));
+
+                if (px >= mapX + 2 && px + pixelSize <= mapX + mapSize - 2 && py >= mapY + 2 && py + pixelSize <= mapY + mapSize - 2) {
+                    RenderUtils.drawRect(poseStack, (int) px, (int) py, pixelSize, pixelSize, 0xCC000000 | mapCol);
+                }
+            }
+        }
+
+        // Radar grid
+        RenderUtils.drawLine(poseStack, mapX + 4, cy, mapX + mapSize - 4, cy, 1.0f, 0x33CBD5E1);
+        RenderUtils.drawLine(poseStack, cx, mapY + 4, cx, mapY + mapSize - 4, 1.0f, 0x33CBD5E1);
+
+        // Cardinal directions
+        font.drawShadow(poseStack, "N", cx - font.width("N") / 2.0f, mapY + 3, accent);
+        font.drawShadow(poseStack, "S", cx - font.width("S") / 2.0f, mapY + mapSize - 11, 0xFF94A3B8);
+        font.drawShadow(poseStack, "W", mapX + 3, cy - 4, 0xFF94A3B8);
+        font.drawShadow(poseStack, "E", mapX + mapSize - 9, cy - 4, 0xFF94A3B8);
+
+        // 3. Render Entities with clear player icons
+        for (Entity e : mc.level.entitiesForRendering()) {
+            if (e == mc.player || !(e instanceof LivingEntity)) continue;
+            LivingEntity living = (LivingEntity) e;
+            if (!living.isAlive() || living.isDeadOrDying()) continue;
+
+            boolean isPlayer = living instanceof Player;
+            boolean isMonster = living instanceof net.minecraft.world.entity.monster.Monster;
+            boolean isAnimal = living instanceof net.minecraft.world.entity.animal.Animal;
+
+            if (isPlayer && !mm.showPlayers.getValue()) continue;
+            if (isMonster && !mm.showMobs.getValue()) continue;
+            if (isAnimal && !mm.showAnimals.getValue()) continue;
+            if (!isPlayer && !isMonster && !isAnimal) continue;
+
+            double dx = e.getX() - mc.player.getX();
+            double dz = e.getZ() - mc.player.getZ();
+
+            if (Math.abs(dx) <= range && Math.abs(dz) <= range) {
+                float maxPixelR = radius - 6.0f;
+                float px = (float) (cx + (dx / range) * maxPixelR);
+                float py = (float) (cy + (dz / range) * maxPixelR);
+
+                if (isPlayer) {
+                    // Bright Cyan-Purple player marker with outline
+                    RenderUtils.drawBorderedRect(poseStack, (int) px - 2, (int) py - 2, 5, 5, 1, 0xFFEF4444, 0xFFFFFFFF);
+                    String pName = living.getName().getString();
+                    poseStack.pushPose();
+                    poseStack.translate(px, py - 8, 0);
+                    poseStack.scale(0.55f, 0.55f, 1.0f);
+                    font.drawShadow(poseStack, pName, -font.width(pName) / 2.0f, 0, 0xFFFFFFFF);
+                    poseStack.popPose();
+                } else {
+                    int dotColor = isMonster ? 0xFFF59E0B : 0xFF38BDF8;
+                    RenderUtils.drawRect(poseStack, (int) px - 1, (int) py - 1, 3, 3, dotColor);
+                }
+            }
+        }
+
+        // 4. Player center marker & view needle
+        RenderUtils.drawRect(poseStack, (int) cx - 2, (int) cy - 2, 4, 4, 0xFF10B981);
+        double rad = Math.toRadians(mc.player.yRot + 90.0f);
+        float nx = (float) (cx + Math.cos(rad) * 7.0f);
+        float ny = (float) (cy + Math.sin(rad) * 7.0f);
+        RenderUtils.drawLine(poseStack, cx, cy, nx, ny, 1.5f, 0xFF10B981);
+
+        poseStack.popPose();
     }
 }

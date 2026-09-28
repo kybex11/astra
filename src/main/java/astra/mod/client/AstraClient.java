@@ -47,12 +47,18 @@ public class AstraClient implements ClientModInitializer {
                 "category.astra"
         ));
 
+        // Register 3D World Render Event for 3D Box ESP & Tracers
+        net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.LAST.register(context -> {
+            astra.mod.client.util.Render3D.renderWorld(context.matrixStack(), context.camera(), context.tickDelta());
+        });
+
         // Client Tick Handler
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             // Set Window Icon, PvP Pack export, and Initial Title once window is ready
             if (!initialized && client.getWindow() != null) {
                 applyWindowCustomizations(client);
                 ensurePvPPackExported(client);
+                astra.mod.client.config.ConfigManager.INSTANCE.load();
                 initialized = true;
             }
 

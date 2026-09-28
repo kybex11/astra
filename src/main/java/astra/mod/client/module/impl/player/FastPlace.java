@@ -5,6 +5,6 @@ import astra.mod.client.module.Module;
 
 public class FastPlace extends Module {
     public FastPlace() {
-        super("FastPlace", "Убирает задержку при установке блоков и использовании предметов", Category.PLAYER);
+        super("FastPlace", "Убирает задержку при установке блоков и использовании предметов", Category.BUILD);
     }
 }
