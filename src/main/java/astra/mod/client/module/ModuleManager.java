@@ -71,6 +71,8 @@ public class ModuleManager {
         register(new FastRender());
         register(new NoRender());
         register(new Trails());
+        register(Zoom.INSTANCE);
+        register(XRay.INSTANCE);
 
         // Player & Building
         register(new NoFall());

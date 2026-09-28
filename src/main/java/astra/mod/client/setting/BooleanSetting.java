@@ -5,6 +5,10 @@ public class BooleanSetting extends Setting<Boolean> {
         super(name, description, defaultValue);
     }
 
+    public BooleanSetting(String name, boolean defaultValue) {
+        this(name, name, defaultValue);
+    }
+
     public void toggle() {
         this.value = !this.value;
     }

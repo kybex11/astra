@@ -2,6 +2,7 @@ package astra.mod.mixin;
 
 import astra.mod.client.module.ModuleManager;
 import astra.mod.client.module.impl.render.Keystrokes;
+import astra.mod.client.module.impl.render.Zoom;
 import astra.mod.client.ui.PauseMenuHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
@@ -32,6 +33,15 @@ public class MouseHandlerMixin {
                 if (PauseMenuHandler.handleClick(mc.screen, mouseX, mouseY, button)) {
                     ci.cancel();
                 }
+            }
+        }
+    }
+
+    @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
+    private void onMouseScroll(long window, double xoffset, double yoffset, CallbackInfo ci) {
+        if (Zoom.INSTANCE != null && Zoom.INSTANCE.isEnabled() && Zoom.INSTANCE.isHoldingZoom()) {
+            if (Zoom.INSTANCE.onScroll(yoffset)) {
+                ci.cancel();
             }
         }
     }

@@ -2,6 +2,7 @@ package astra.mod.mixin;
 
 import astra.mod.client.module.impl.render.ESP;
 import astra.mod.client.module.impl.render.Trails;
+import astra.mod.client.module.impl.render.XRay;
 import astra.mod.client.theme.ThemeManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -32,6 +33,10 @@ public class LevelRendererMixin {
     private void onRenderLevel(PoseStack poseStack, float partialTicks, long finishTimeNano, boolean drawBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {
         if (Trails.INSTANCE != null) {
             Trails.INSTANCE.render3D(poseStack, camera, partialTicks);
+        }
+
+        if (XRay.INSTANCE != null) {
+            XRay.INSTANCE.render3D(poseStack, camera, partialTicks);
         }
 
         astra_renderTracers(poseStack, camera, partialTicks);

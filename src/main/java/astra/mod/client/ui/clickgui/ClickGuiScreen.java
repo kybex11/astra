@@ -330,6 +330,8 @@ public class ClickGuiScreen extends Screen {
             case "KeySounds": return "[MECH]";
             case "AntiSwimming": return "[JESUS]";
             case "AntiFire": return "[FIRE]";
+            case "Zoom": return "[ZOOM]";
+            case "XRay": return "[XRAY]";
             default: return "[MOD]";
         }
     }

@@ -12,6 +12,10 @@ public class NumberSetting extends Setting<Double> {
         this.step = step;
     }
 
+    public NumberSetting(String name, double defaultValue, double min, double max, double step) {
+        this(name, name, defaultValue, min, max, step);
+    }
+
     public double getMin() {
         return min;
     }
@@ -28,6 +32,6 @@ public class NumberSetting extends Setting<Double> {
     public void setValue(Double value) {
         double clamped = Math.max(min, Math.min(max, value));
         double stepped = Math.round(clamped / step) * step;
-        this.value = Math.round(stepped * 100.0) / 100.0;
+        super.setValue(stepped);
     }
 }
