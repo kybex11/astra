@@ -4,14 +4,12 @@ import astra.mod.client.Category;
 import astra.mod.client.module.impl.combat.AutoClicker;
 import astra.mod.client.module.impl.combat.KillAura;
 import astra.mod.client.module.impl.movement.Fly;
+import astra.mod.client.module.impl.movement.FreeLook;
 import astra.mod.client.module.impl.movement.Speed;
 import astra.mod.client.module.impl.movement.Sprint;
 import astra.mod.client.module.impl.player.FastPlace;
 import astra.mod.client.module.impl.player.NoFall;
-import astra.mod.client.module.impl.render.ClickGuiModule;
-import astra.mod.client.module.impl.render.ESP;
-import astra.mod.client.module.impl.render.Fullbright;
-import astra.mod.client.module.impl.render.HUD;
+import astra.mod.client.module.impl.render.*;
 import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;
@@ -33,11 +31,20 @@ public class ModuleManager {
         register(new Sprint());
         register(new Fly());
         register(new Speed());
+        register(new FreeLook());
 
-        // Render
+        // Render & Lunar Visuals
         register(new Fullbright());
         register(new ESP());
         register(new HUD());
+        register(new Keystrokes());
+        register(new ArmorHUD());
+        register(new TargetHUD());
+        register(new CPSMod());
+        register(new FPSMod());
+        register(new CustomCrosshair());
+        register(new NoHurtCam());
+        register(new PvPPackModule());
         register(new ClickGuiModule());
 
         // Player

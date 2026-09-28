@@ -28,10 +28,14 @@ public class ModuleButton {
         Font font = mc.font;
         boolean hovered = isHovered(x, y, width, 22, mouseX, mouseY);
 
+        int accent = astra.mod.client.theme.ThemeManager.INSTANCE.getAccent();
+        int accentSec = astra.mod.client.theme.ThemeManager.INSTANCE.getAccentSecondary();
+        int accentDark = astra.mod.client.theme.ThemeManager.INSTANCE.getAccentDark();
+
         // Module row background
         int bgColor;
         if (module.isEnabled()) {
-            bgColor = hovered ? 0xDD312E81 : 0xBB1E1B4B; // Deep Indigo active
+            bgColor = hovered ? (0xDD000000 | (accentDark & 0x00FFFFFF)) : (0xBB000000 | (accentDark & 0x00FFFFFF));
         } else {
             bgColor = hovered ? 0x99232936 : 0x77161A23; // Dark card inactive
         }
@@ -41,7 +45,7 @@ public class ModuleButton {
 
         // Left accent bar if enabled
         if (module.isEnabled()) {
-            RenderUtils.drawGradientV(poseStack, x, y, 3, 22, 0xFF6366F1, 0xFF8B5CF6);
+            RenderUtils.drawGradientV(poseStack, x, y, 3, 22, accent, accentSec);
         }
 
         // Bottom separator
