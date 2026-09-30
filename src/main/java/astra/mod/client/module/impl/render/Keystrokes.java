@@ -21,7 +21,7 @@ public class Keystrokes extends Module {
     private final List<Long> rightClicks = new ArrayList<>();
 
     public Keystrokes() {
-        super("Keystrokes", "Отображает нажатия клавиш WASD и мыши как в Lunar Client", Category.HUD);
+        super("Keystrokes", "Отображает нажатия клавиш WASD и мыши", Category.HUD);
         INSTANCE = this;
         addSettings(showCPS, showSpace, showMouse, x, y);
         setEnabled(true);

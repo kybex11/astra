@@ -43,6 +43,13 @@ public class PlayerMixin {
     private void onAttack(Entity target, CallbackInfo ci) {
         if ((Object) this == Minecraft.getInstance().player) {
             ComboCounter.INSTANCE.onHit();
+            try {
+                if (astra.mod.client.module.impl.render.ReachDisplay.INSTANCE != null
+                        && Minecraft.getInstance().player != null) {
+                    double dist = Minecraft.getInstance().player.distanceTo(target);
+                    astra.mod.client.module.impl.render.ReachDisplay.INSTANCE.record(dist);
+                }
+            } catch (Exception ignored) {}
         }
     }
 

@@ -1,6 +1,7 @@
 package astra.mod.mixin;
 
 import astra.mod.client.module.impl.movement.FreeLook;
+import astra.mod.client.module.impl.movement.Snaplook;
 import net.minecraft.client.Camera;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
@@ -19,6 +20,9 @@ public abstract class CameraMixin {
     private void onSetupRotation(BlockGetter blockGetter, Entity entity, boolean thirdPerson, boolean mirrored, float partialTicks, CallbackInfo ci) {
         if (FreeLook.isActive()) {
             this.setRotation(FreeLook.cameraYaw, FreeLook.cameraPitch);
+        }
+        if (Snaplook.isFlipped()) {
+            this.setRotation(Snaplook.snapYaw, Snaplook.snapPitch);
         }
     }
 }

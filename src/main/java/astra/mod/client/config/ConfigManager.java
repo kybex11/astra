@@ -6,6 +6,7 @@ import astra.mod.client.setting.BooleanSetting;
 import astra.mod.client.setting.ModeSetting;
 import astra.mod.client.setting.NumberSetting;
 import astra.mod.client.setting.Setting;
+import astra.mod.client.setting.StringSetting;
 import astra.mod.client.theme.ThemeManager;
 import astra.mod.client.ui.hud.HudConfig;
 import com.google.gson.Gson;
@@ -49,6 +50,28 @@ public class ConfigManager {
             hud.addProperty("targetY", HudConfig.INSTANCE.targetY);
             hud.addProperty("miniMapX", HudConfig.INSTANCE.miniMapX);
             hud.addProperty("miniMapY", HudConfig.INSTANCE.miniMapY);
+            hud.addProperty("coordsX", HudConfig.INSTANCE.coordsX);
+            hud.addProperty("coordsY", HudConfig.INSTANCE.coordsY);
+            hud.addProperty("pingX", HudConfig.INSTANCE.pingX);
+            hud.addProperty("pingY", HudConfig.INSTANCE.pingY);
+            hud.addProperty("directionX", HudConfig.INSTANCE.directionX);
+            hud.addProperty("directionY", HudConfig.INSTANCE.directionY);
+            hud.addProperty("momentumX", HudConfig.INSTANCE.momentumX);
+            hud.addProperty("momentumY", HudConfig.INSTANCE.momentumY);
+            hud.addProperty("saturationX", HudConfig.INSTANCE.saturationX);
+            hud.addProperty("saturationY", HudConfig.INSTANCE.saturationY);
+            hud.addProperty("totemX", HudConfig.INSTANCE.totemX);
+            hud.addProperty("totemY", HudConfig.INSTANCE.totemY);
+            hud.addProperty("itemCountX", HudConfig.INSTANCE.itemCountX);
+            hud.addProperty("itemCountY", HudConfig.INSTANCE.itemCountY);
+            hud.addProperty("reachX", HudConfig.INSTANCE.reachX);
+            hud.addProperty("reachY", HudConfig.INSTANCE.reachY);
+            hud.addProperty("stopwatchX", HudConfig.INSTANCE.stopwatchX);
+            hud.addProperty("stopwatchY", HudConfig.INSTANCE.stopwatchY);
+            hud.addProperty("effectsX", HudConfig.INSTANCE.effectsX);
+            hud.addProperty("effectsY", HudConfig.INSTANCE.effectsY);
+            hud.addProperty("bossBarX", HudConfig.INSTANCE.bossBarX);
+            hud.addProperty("bossBarY", HudConfig.INSTANCE.bossBarY);
 
             JsonObject scales = new JsonObject();
             for (Map.Entry<String, Float> entry : HudConfig.INSTANCE.elementScales.entrySet()) {
@@ -73,6 +96,8 @@ public class ConfigManager {
                         settings.addProperty(s.getName(), ((NumberSetting) s).getValue());
                     } else if (s instanceof ModeSetting) {
                         settings.addProperty(s.getName(), ((ModeSetting) s).getValue());
+                    } else if (s instanceof StringSetting) {
+                        settings.addProperty(s.getName(), ((StringSetting) s).getValue());
                     }
                 }
                 modJson.add("settings", settings);
@@ -118,6 +143,28 @@ public class ConfigManager {
                 if (hud.has("targetY")) HudConfig.INSTANCE.targetY = hud.get("targetY").getAsInt();
                 if (hud.has("miniMapX")) HudConfig.INSTANCE.miniMapX = hud.get("miniMapX").getAsInt();
                 if (hud.has("miniMapY")) HudConfig.INSTANCE.miniMapY = hud.get("miniMapY").getAsInt();
+                if (hud.has("coordsX")) HudConfig.INSTANCE.coordsX = hud.get("coordsX").getAsInt();
+                if (hud.has("coordsY")) HudConfig.INSTANCE.coordsY = hud.get("coordsY").getAsInt();
+                if (hud.has("pingX")) HudConfig.INSTANCE.pingX = hud.get("pingX").getAsInt();
+                if (hud.has("pingY")) HudConfig.INSTANCE.pingY = hud.get("pingY").getAsInt();
+                if (hud.has("directionX")) HudConfig.INSTANCE.directionX = hud.get("directionX").getAsInt();
+                if (hud.has("directionY")) HudConfig.INSTANCE.directionY = hud.get("directionY").getAsInt();
+                if (hud.has("momentumX")) HudConfig.INSTANCE.momentumX = hud.get("momentumX").getAsInt();
+                if (hud.has("momentumY")) HudConfig.INSTANCE.momentumY = hud.get("momentumY").getAsInt();
+                if (hud.has("saturationX")) HudConfig.INSTANCE.saturationX = hud.get("saturationX").getAsInt();
+                if (hud.has("saturationY")) HudConfig.INSTANCE.saturationY = hud.get("saturationY").getAsInt();
+                if (hud.has("totemX")) HudConfig.INSTANCE.totemX = hud.get("totemX").getAsInt();
+                if (hud.has("totemY")) HudConfig.INSTANCE.totemY = hud.get("totemY").getAsInt();
+                if (hud.has("itemCountX")) HudConfig.INSTANCE.itemCountX = hud.get("itemCountX").getAsInt();
+                if (hud.has("itemCountY")) HudConfig.INSTANCE.itemCountY = hud.get("itemCountY").getAsInt();
+                if (hud.has("reachX")) HudConfig.INSTANCE.reachX = hud.get("reachX").getAsInt();
+                if (hud.has("reachY")) HudConfig.INSTANCE.reachY = hud.get("reachY").getAsInt();
+                if (hud.has("stopwatchX")) HudConfig.INSTANCE.stopwatchX = hud.get("stopwatchX").getAsInt();
+                if (hud.has("stopwatchY")) HudConfig.INSTANCE.stopwatchY = hud.get("stopwatchY").getAsInt();
+                if (hud.has("effectsX")) HudConfig.INSTANCE.effectsX = hud.get("effectsX").getAsInt();
+                if (hud.has("effectsY")) HudConfig.INSTANCE.effectsY = hud.get("effectsY").getAsInt();
+                if (hud.has("bossBarX")) HudConfig.INSTANCE.bossBarX = hud.get("bossBarX").getAsInt();
+                if (hud.has("bossBarY")) HudConfig.INSTANCE.bossBarY = hud.get("bossBarY").getAsInt();
 
                 if (hud.has("scales")) {
                     JsonObject scales = hud.getAsJsonObject("scales");
@@ -150,6 +197,8 @@ public class ConfigManager {
                                         ((NumberSetting) s).setValue(settings.get(s.getName()).getAsDouble());
                                     } else if (s instanceof ModeSetting) {
                                         ((ModeSetting) s).setValue(settings.get(s.getName()).getAsString());
+                                    } else if (s instanceof StringSetting) {
+                                        ((StringSetting) s).setValue(settings.get(s.getName()).getAsString());
                                     }
                                 }
                             }

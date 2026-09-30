@@ -24,7 +24,13 @@
 		"ClientPacketListenerMixin",
 		"LevelRendererMixin",
 		"AbstractWidgetMixin",
-		"AbstractContainerScreenMixin"
+		"AbstractContainerScreenMixin",
+		"BossHealthOverlayMixin",
+		"BossHealthOverlayAccessor",
+		"FogRendererMixin",
+		"LivingEntityRendererMixin",
+		"ItemEntityRendererMixin",
+		"EntityRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

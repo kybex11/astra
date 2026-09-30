@@ -209,6 +209,31 @@ public class RenderUtils {
         drawRoundedRect(poseStack, x + borderWidth, y + borderWidth, width - borderWidth * 2, height - borderWidth * 2, Math.max(0, radius - borderWidth), bgColor);
     }
 
+    public static void drawLine(PoseStack poseStack, float x1, float y1, float x2, float y2, float lineWidth, int color) {
+        float a = (float) (color >> 24 & 255) / 255.0F;
+        float r = (float) (color >> 16 & 255) / 255.0F;
+        float g = (float) (color >> 8 & 255) / 255.0F;
+        float b = (float) (color & 255) / 255.0F;
+
+        RenderSystem.enableBlend();
+        RenderSystem.disableTexture();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.lineWidth(lineWidth);
+
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.getBuilder();
+        Matrix4f matrix = poseStack.last().pose();
+
+        buffer.begin(1, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x1, y1, 0.0F).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, x2, y2, 0.0F).color(r, g, b, a).endVertex();
+        buffer.end();
+        BufferUploader.end(buffer);
+
+        RenderSystem.enableTexture();
+        RenderSystem.disableBlend();
+    }
+
     public static void drawCircle(PoseStack poseStack, float cx, float cy, float radius, int color) {
         float a = (float) (color >> 24 & 255) / 255.0F;
         float r = (float) (color >> 16 & 255) / 255.0F;

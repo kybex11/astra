@@ -7,7 +7,7 @@ public class FPSMod extends Module {
     public static FPSMod INSTANCE;
 
     public FPSMod() {
-        super("FPS", "Счетчик кадров в секунду в стиле Lunar Client", Category.HUD);
+        super("FPS", "Счетчик кадров в секунду", Category.HUD);
         INSTANCE = this;
         setEnabled(true);
     }

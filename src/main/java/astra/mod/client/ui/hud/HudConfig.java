@@ -14,6 +14,19 @@ public class HudConfig {
     public int targetX = -1, targetY = -1; // -1 means auto (screen center bottom)
     public int miniMapX = 10, miniMapY = 140;
 
+    // info pills
+    public int coordsX = 8, coordsY = 26;
+    public int pingX = 8, pingY = 40;
+    public int directionX = 120, directionY = 26;
+    public int momentumX = 120, momentumY = 40;
+    public int saturationX = 95, saturationY = 54;
+    public int totemX = 10, totemY = 225;
+    public int itemCountX = 10, itemCountY = 239;
+    public int reachX = 10, reachY = 253;
+    public int stopwatchX = 10, stopwatchY = 267;
+    public int effectsX = -1, effectsY = -1; // -1 means auto (top-right)
+    public int bossBarX = -1, bossBarY = 12; // -1 means auto (top-center)
+
     public final Map<String, Float> elementScales = new HashMap<>();
 
     public float getScale(String id) {

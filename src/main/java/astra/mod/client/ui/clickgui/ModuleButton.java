@@ -5,6 +5,7 @@ import astra.mod.client.setting.BooleanSetting;
 import astra.mod.client.setting.ModeSetting;
 import astra.mod.client.setting.NumberSetting;
 import astra.mod.client.setting.Setting;
+import astra.mod.client.setting.StringSetting;
 import astra.mod.client.util.RenderUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -140,6 +141,17 @@ public class ModuleButton {
             font.drawShadow(poseStack, ms.getName(), sx + 6, sy + 5, 0xFFCBD5E1);
             String modeVal = "[" + ms.getValue() + "]";
             font.drawShadow(poseStack, modeVal, sx + sw - font.width(modeVal) - 6, sy + 5, 0xFF818CF8);
+        } else if (setting instanceof StringSetting) {
+            StringSetting ss = (StringSetting) setting;
+            font.drawShadow(poseStack, ss.getName(), sx + 6, sy + 5, 0xFFCBD5E1);
+            String val = String.valueOf(ss.getValue());
+            int maxW = sw - 12 - font.width(ss.getName()) - 14;
+            while (font.width("..." + val) > maxW && val.length() > 1) {
+                val = val.substring(0, val.length() - 1);
+            }
+            if (!String.valueOf(ss.getValue()).equals(val)) val = "..." + val;
+            else val = "\"" + val + "\"";
+            font.drawShadow(poseStack, val, sx + sw - font.width(val) - 6, sy + 5, 0xFF818CF8);
         }
     }
 

@@ -9,13 +9,11 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
-import com.mojang.math.Vector3f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public class Render3D {
@@ -44,12 +42,6 @@ public class Render3D {
         float g = ((accent >> 8) & 0xFF) / 255.0f;
         float b = (accent & 0xFF) / 255.0f;
 
-        poseStack.pushPose();
-        // Un-rotate camera rotation so matrix is purely world-aligned relative to camera eye
-        poseStack.mulPose(Vector3f.YP.rotationDegrees(-camera.getYRot() - 180.0F));
-        poseStack.mulPose(Vector3f.XP.rotationDegrees(-camera.getXRot()));
-        Matrix4f worldMatrix = poseStack.last().pose();
-
         for (Entity e : mc.level.entitiesForRendering()) {
             if (!(e instanceof LivingEntity) || e == mc.player) continue;
             LivingEntity living = (LivingEntity) e;
@@ -75,16 +67,20 @@ public class Render3D {
             // 1. Draw 3D Box (if enabled)
             if (esp.box3d.getValue()) {
                 buffer.begin(1, DefaultVertexFormat.POSITION_COLOR); // 1 = GL_LINES
-                drawBoxLines(buffer, worldMatrix, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, 0.85f);
+                drawBoxLines(buffer, matrix, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, 0.85f);
                 buffer.end();
                 BufferUploader.end(buffer);
             }
 
-            // 2. Draw Tracers (if enabled) - originates directly from center/crosshair (0,0,0)
+            // 2. Draw Tracers (if enabled)
             if (esp.tracers.getValue()) {
+                double playerX = MthLerp(tickDelta, mc.player.xOld, mc.player.getX()) - camPos.x;
+                double playerY = MthLerp(tickDelta, mc.player.yOld, mc.player.getY()) - camPos.y + mc.player.getEyeHeight() * 0.5;
+                double playerZ = MthLerp(tickDelta, mc.player.zOld, mc.player.getZ()) - camPos.z;
+
                 buffer.begin(1, DefaultVertexFormat.POSITION_COLOR);
-                buffer.vertex(worldMatrix, 0.0f, 0.0f, 0.0f).color(r, g, b, 0.7f).endVertex();
-                buffer.vertex(worldMatrix, (float) (lerpX - camPos.x), (float) (lerpY + h * 0.5f - camPos.y), (float) (lerpZ - camPos.z)).color(r, g, b, 0.7f).endVertex();
+                buffer.vertex(matrix, (float) playerX, (float) playerY, (float) playerZ).color(r, g, b, 0.7f).endVertex();
+                buffer.vertex(matrix, (float) (lerpX - camPos.x), (float) (lerpY + h * 0.5f - camPos.y), (float) (lerpZ - camPos.z)).color(r, g, b, 0.7f).endVertex();
                 buffer.end();
                 BufferUploader.end(buffer);
             }
@@ -98,59 +94,65 @@ public class Render3D {
                 float barX = minX - 0.06f;
                 float barH = (maxY - minY) * hpPercent;
 
-                float hpR = Math.max(0.0f, Math.min(1.0f, (1.0f - hpPercent) * 2.0f));
-                float hpG = Math.max(0.0f, Math.min(1.0f, hpPercent * 2.0f));
-                float hpB = 0.15f;
-
                 buffer.begin(1, DefaultVertexFormat.POSITION_COLOR);
-                // Health bar background line
-                buffer.vertex(worldMatrix, barX, minY, minZ).color(0.1f, 0.1f, 0.1f, 0.7f).endVertex();
-                buffer.vertex(worldMatrix, barX, maxY, minZ).color(0.1f, 0.1f, 0.1f, 0.7f).endVertex();
-                // Active health line
-                buffer.vertex(worldMatrix, barX, minY, minZ).color(hpR, hpG, hpB, 0.95f).endVertex();
-                buffer.vertex(worldMatrix, barX, minY + barH, minZ).color(hpR, hpG, hpB, 0.95f).endVertex();
+                // Background dark bar
+                buffer.vertex(matrix, barX, minY, minZ).color(0.1f, 0.1f, 0.1f, 0.8f).endVertex();
+                buffer.vertex(matrix, barX, maxY, minZ).color(0.1f, 0.1f, 0.1f, 0.8f).endVertex();
+
+                // Colored health
+                float hr = (1.0f - hpPercent);
+                float hg = hpPercent;
+                buffer.vertex(matrix, barX, minY, minZ).color(hr, hg, 0.1f, 1.0f).endVertex();
+                buffer.vertex(matrix, barX, minY + barH, minZ).color(hr, hg, 0.1f, 1.0f).endVertex();
                 buffer.end();
                 BufferUploader.end(buffer);
             }
         }
-
-        poseStack.popPose();
 
         RenderSystem.enableDepthTest();
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 
-    private static void drawBoxLines(BufferBuilder buffer, Matrix4f m, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, float r, float g, float b, float a) {
-        // Bottom rect
-        buffer.vertex(m, minX, minY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, minY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, minY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, minY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, minY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, minY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, minY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, minY, minZ).color(r, g, b, a).endVertex();
+    private static void drawBoxLines(BufferBuilder buffer, Matrix4f mat, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, float r, float g, float b, float a) {
+        // Bottom square
+        buffer.vertex(mat, minX, minY, minZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, minY, minZ).color(r, g, b, a).endVertex();
 
-        // Top rect
-        buffer.vertex(m, minX, maxY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, maxY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, maxY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, maxY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, maxY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, maxY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, maxY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, maxY, minZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, minY, minZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, minY, maxZ).color(r, g, b, a).endVertex();
 
-        // 4 Vertical Pillars
-        buffer.vertex(m, minX, minY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, maxY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, minY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, maxY, minZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, minY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, maxX, maxY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, minY, maxZ).color(r, g, b, a).endVertex();
-        buffer.vertex(m, minX, maxY, maxZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, minY, maxZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, minX, minY, maxZ).color(r, g, b, a).endVertex();
+
+        buffer.vertex(mat, minX, minY, maxZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, minX, minY, minZ).color(r, g, b, a).endVertex();
+
+        // Top square
+        buffer.vertex(mat, minX, maxY, minZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, maxY, minZ).color(r, g, b, a).endVertex();
+
+        buffer.vertex(mat, maxX, maxY, minZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, maxY, maxZ).color(r, g, b, a).endVertex();
+
+        buffer.vertex(mat, maxX, maxY, maxZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, minX, maxY, maxZ).color(r, g, b, a).endVertex();
+
+        buffer.vertex(mat, minX, maxY, maxZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, minX, maxY, minZ).color(r, g, b, a).endVertex();
+
+        // Vertical pillars
+        buffer.vertex(mat, minX, minY, minZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, minX, maxY, minZ).color(r, g, b, a).endVertex();
+
+        buffer.vertex(mat, maxX, minY, minZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, maxY, minZ).color(r, g, b, a).endVertex();
+
+        buffer.vertex(mat, maxX, minY, maxZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, maxX, maxY, maxZ).color(r, g, b, a).endVertex();
+
+        buffer.vertex(mat, minX, minY, maxZ).color(r, g, b, a).endVertex();
+        buffer.vertex(mat, minX, maxY, maxZ).color(r, g, b, a).endVertex();
     }
 
     private static double MthLerp(float delta, double start, double end) {

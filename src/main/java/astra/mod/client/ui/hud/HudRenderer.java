@@ -20,6 +20,8 @@ import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class HudRenderer {
@@ -33,20 +35,29 @@ public class HudRenderer {
         int accent = ThemeManager.INSTANCE.getAccent();
         int accentSec = ThemeManager.INSTANCE.getAccentSecondary();
 
-        // 1. Lunar-Style Keystrokes
+        // 1. Keystrokes
         renderKeystrokes(poseStack, font, accent);
 
-        // 2. Lunar-Style FPS, CPS & Combo Pills
+        // 2. FPS, CPS & Combo Pills
         renderPills(poseStack, font, accent);
 
-        // 3. Lunar-Style ArmorHUD
+        // 3. ArmorHUD
         renderArmorHUD(poseStack, font);
 
-        // 4. Lunar-Style TargetHUD
+        // 4. TargetHUD
         renderTargetHUD(poseStack, font, accent, accentSec);
 
         // 5. MiniMap / Full Rect Radar
         renderMiniMap(poseStack, font, accent);
+
+        // 6. info pills (coords, ping, direction, speed, food, totems...)
+        renderInfoPills(poseStack, font, accent);
+
+        // 6b. Status effects, item cooldowns, damage vignette, boss bar
+        renderStatusEffects(poseStack, font, accent);
+        renderCooldowns(poseStack, font, accent, tickDelta);
+        renderDamageTint(poseStack);
+        renderBossBar(poseStack, font);
 
         // 7. Active Modules (ArrayList) on the right side
         renderArrayList(poseStack, font, mc);
@@ -271,8 +282,252 @@ public class HudRenderer {
         }
     }
 
-    private void renderArrayList(PoseStack poseStack, Font font, Minecraft mc) {
-        HUD hud = ModuleManager.INSTANCE.getModule(HUD.class);
+    private void drawScaledPill(PoseStack poseStack, Font font, String scaleId, int cfgX, int cfgY, String text, int accent) {
+        float scale = HudConfig.INSTANCE.getScale(scaleId);
+        poseStack.pushPose();
+        poseStack.scale(scale, scale, 1.0f);
+        int x = (int) (cfgX / scale);
+        int y = (int) (cfgY / scale);
+        int w = font.width(text) + 12;
+        RenderUtils.drawBorderedRect(poseStack, x, y, w, 12, 1, 0xAA0F172A, 0x44334155);
+        RenderUtils.drawRect(poseStack, x, y, 2, 12, accent);
+        font.drawShadow(poseStack, text, x + 6, y + 2, 0xFFFFFFFF);
+        poseStack.popPose();
+    }
+
+    private void renderInfoPills(PoseStack poseStack, Font font, int accent) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        if (Coordinates.INSTANCE != null && Coordinates.INSTANCE.isEnabled()) {
+            net.minecraft.core.BlockPos p = mc.player.blockPosition();
+            String text = "XYZ: " + p.getX() + " / " + p.getY() + " / " + p.getZ();
+            if (Coordinates.INSTANCE.showBiome.getValue()) text += " | " + Coordinates.getBiomeName();
+            if (Coordinates.INSTANCE.showFacing.getValue()) text += " | " + Coordinates.getFacing();
+            drawScaledPill(poseStack, font, "coords", HudConfig.INSTANCE.coordsX, HudConfig.INSTANCE.coordsY, text, accent);
+        }
+        if (PingMod.INSTANCE != null && PingMod.INSTANCE.isEnabled()) {
+            drawScaledPill(poseStack, font, "ping", HudConfig.INSTANCE.pingX, HudConfig.INSTANCE.pingY,
+                    "Ping: " + PingMod.getPingText(), accent);
+        }
+        if (DirectionHUD.INSTANCE != null && DirectionHUD.INSTANCE.isEnabled()) {
+            drawScaledPill(poseStack, font, "direction", HudConfig.INSTANCE.directionX, HudConfig.INSTANCE.directionY,
+                    "Dir: " + DirectionHUD.getDirection(), accent);
+        }
+        if (MomentumMod.INSTANCE != null && MomentumMod.INSTANCE.isEnabled()) {
+            drawScaledPill(poseStack, font, "momentum", HudConfig.INSTANCE.momentumX, HudConfig.INSTANCE.momentumY,
+                    "Speed: " + MomentumMod.INSTANCE.getSpeed() + " b/s", accent);
+        }
+        if (SaturationMod.INSTANCE != null && SaturationMod.INSTANCE.isEnabled()) {
+            drawScaledPill(poseStack, font, "saturation", HudConfig.INSTANCE.saturationX, HudConfig.INSTANCE.saturationY,
+                    SaturationMod.getText(), accent);
+        }
+        if (TotemCounter.INSTANCE != null && TotemCounter.INSTANCE.isEnabled()) {
+            drawScaledPill(poseStack, font, "totem", HudConfig.INSTANCE.totemX, HudConfig.INSTANCE.totemY,
+                    "Totems: " + TotemCounter.countTotems(), accent);
+        }
+        if (ItemCounter.INSTANCE != null && ItemCounter.INSTANCE.isEnabled()) {
+            String shortName = ItemCounter.INSTANCE.item.getValue();
+            if (shortName.equals("Golden Apple")) shortName = "Gapple";
+            else if (shortName.equals("Ender Pearl")) shortName = "Pearl";
+            drawScaledPill(poseStack, font, "itemcount", HudConfig.INSTANCE.itemCountX, HudConfig.INSTANCE.itemCountY,
+                    shortName + ": " + ItemCounter.INSTANCE.count(), accent);
+        }
+        if (ReachDisplay.INSTANCE != null && ReachDisplay.INSTANCE.isEnabled()) {
+            drawScaledPill(poseStack, font, "reach", HudConfig.INSTANCE.reachX, HudConfig.INSTANCE.reachY,
+                    ReachDisplay.INSTANCE.getText(), accent);
+        }
+        if (StopwatchMod.INSTANCE != null && StopwatchMod.INSTANCE.isEnabled()) {
+            drawScaledPill(poseStack, font, "stopwatch", HudConfig.INSTANCE.stopwatchX, HudConfig.INSTANCE.stopwatchY,
+                    "Time: " + StopwatchMod.INSTANCE.getText(), accent);
+        }
+    }
+
+    private String toRoman(int n) {
+        switch (n) {
+            case 1: return "II";
+            case 2: return "III";
+            case 3: return "IV";
+            case 4: return "V";
+            default: return n > 4 ? (n + 1) + "" : "";
+        }
+    }
+
+    private void renderStatusEffects(PoseStack poseStack, Font font, int accent) {
+        StatusEffectHUD se = StatusEffectHUD.INSTANCE;
+        if (se == null || !se.isEnabled()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.player.getActiveEffects().isEmpty()) return;
+
+        int screenW = mc.getWindow().getGuiScaledWidth();
+        int startX = HudConfig.INSTANCE.effectsX == -1 ? (screenW - 118) : HudConfig.INSTANCE.effectsX;
+        int startY;
+        if (HudConfig.INSTANCE.effectsY != -1) {
+            startY = HudConfig.INSTANCE.effectsY;
+        } else {
+            startY = 8;
+            HUD hud = ModuleManager.INSTANCE.getModule(HUD.class);
+            if (hud != null && hud.isEnabled() && hud.arrayList.getValue()) {
+                long count = ModuleManager.INSTANCE.getModules().stream()
+                        .filter(Module::isEnabled).filter(m -> !(m instanceof HUD)).count();
+                startY += (int) (count * 15 + 8);
+            }
+        }
+
+        float scale = HudConfig.INSTANCE.getScale("effects");
+        poseStack.pushPose();
+        poseStack.scale(scale, scale, 1.0f);
+        int x = (int) (startX / scale);
+        int y = (int) (startY / scale);
+
+        for (net.minecraft.world.effect.MobEffectInstance inst : mc.player.getActiveEffects()) {
+            String name;
+            try {
+                name = inst.getEffect().getDisplayName().getString();
+            } catch (Exception e) {
+                continue;
+            }
+            if (se.showAmplifier.getValue()) {
+                String roman = toRoman(inst.getAmplifier());
+                if (!roman.isEmpty()) name += " " + roman;
+            }
+            if (se.showDuration.getValue()) name += " §7" + StatusEffectHUD.formatDuration(inst.getDuration());
+            int w = Math.max(112, font.width(name) + 12);
+            RenderUtils.drawBorderedRect(poseStack, x, y, w, 12, 1, 0xAA0F172A, 0x44334155);
+            RenderUtils.drawRect(poseStack, x, y, 2, 12, accent);
+            font.drawShadow(poseStack, name, x + 6, y + 2, 0xFFFFFFFF);
+            y += 14;
+        }
+        poseStack.popPose();
+    }
+
+    private void renderCooldowns(PoseStack poseStack, Font font, int accent, float tickDelta) {
+        Cooldowns cd = Cooldowns.INSTANCE;
+        if (cd == null || !cd.isEnabled()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.screen != null) return;
+
+        int screenW = mc.getWindow().getGuiScaledWidth();
+        int screenH = mc.getWindow().getGuiScaledHeight();
+        int baseX = screenW / 2 - 91;
+        int barY = screenH - 27;
+
+        for (int i = 0; i < 9; i++) {
+            net.minecraft.world.item.ItemStack stack = mc.player.inventory.items.get(i);
+            if (stack.isEmpty()) continue;
+            float pct;
+            try {
+                pct = mc.player.getCooldowns().getCooldownPercent(stack.getItem(), tickDelta);
+            } catch (Exception e) {
+                continue;
+            }
+            if (pct <= 0.0f) continue;
+            int x = baseX + i * 20 + 2;
+            RenderUtils.drawRect(poseStack, x, barY, 16, 3, 0xAA0F172A);
+            int fill = Math.max(1, Math.round(16 * Math.min(1.0f, pct)));
+            RenderUtils.drawRect(poseStack, x, barY, fill, 3, accent);
+            if (cd.showPercent.getValue()) {
+                String t = Math.round(pct * 100.0f) + "%";
+                font.drawShadow(poseStack, t, x + 8 - font.width(t) / 2.0f, barY - 9, 0xFFFFFFFF);
+            }
+        }
+    }
+
+    private void renderDamageTint(PoseStack poseStack) {
+        DamageTint dt = DamageTint.INSTANCE;
+        if (dt == null || !dt.isEnabled()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        float hp;
+        try {
+            hp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
+        } catch (Exception e) {
+            return;
+        }
+        float threshold = dt.threshold.getValue().floatValue();
+        if (hp > threshold) return;
+
+        float k = 1.0f - Math.max(0.0f, hp) / Math.max(1.0f, threshold);
+        int alpha = (int) (40 + k * 90);
+        int edge = (alpha << 24) | 0x00FF0000;
+        int screenW = mc.getWindow().getGuiScaledWidth();
+        int screenH = mc.getWindow().getGuiScaledHeight();
+        int band = 28;
+        RenderUtils.drawRect(poseStack, 0, 0, screenW, band, edge);
+        RenderUtils.drawRect(poseStack, 0, screenH - band, screenW, band, edge);
+        RenderUtils.drawRect(poseStack, 0, band, band, screenH - band * 2, edge);
+        RenderUtils.drawRect(poseStack, screenW - band, band, band, screenH - band * 2, edge);
+    }
+
+        private int bossColorToInt(net.minecraft.world.BossEvent.BossBarColor color) {
+        if (color == null) return 0xFFFF5555;
+        switch (color) {
+            case PINK: return 0xFFF06292;
+            case BLUE: return 0xFF5B8DEF;
+            case RED: return 0xFFFF4444;
+            case GREEN: return 0xFF44DD44;
+            case YELLOW: return 0xFFFFFF55;
+            case PURPLE: return 0xFFB45BF2;
+            case WHITE:
+            default: return 0xFFFFFFFF;
+        }
+    }
+
+    private void renderBossBar(PoseStack poseStack, Font font) {
+        BossBarMod m = BossBarMod.INSTANCE;
+        if (m == null || !m.shouldShowCustom()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.gui == null) return;
+
+        Map<UUID, net.minecraft.client.gui.components.LerpingBossEvent> events;
+        try {
+            events = ((astra.mod.mixin.BossHealthOverlayAccessor) mc.gui.getBossOverlay()).astra$getEvents();
+        } catch (Exception e) {
+            return;
+        }
+        if (events == null || events.isEmpty()) return;
+
+        int screenW = mc.getWindow().getGuiScaledWidth();
+        int barW = 182;
+        int barH = 5;
+        int baseX = HudConfig.INSTANCE.bossBarX == -1 ? (screenW - barW) / 2 : HudConfig.INSTANCE.bossBarX;
+        int baseY = HudConfig.INSTANCE.bossBarY;
+
+        float s = HudConfig.INSTANCE.getScale("bossbar") * m.getScale();
+
+        poseStack.pushPose();
+        if (s != 1.0f) {
+            float cx = baseX + barW / 2.0f;
+            poseStack.translate(cx, baseY, 0.0f);
+            poseStack.scale(s, s, 1.0f);
+            poseStack.translate(-cx, -baseY, 0.0f);
+        }
+
+        int y = baseY;
+        for (net.minecraft.client.gui.components.LerpingBossEvent event : events.values()) {
+            String name;
+            float pct;
+            int color;
+            try {
+                name = event.getName().getString();
+                pct = Math.max(0.0f, Math.min(1.0f, event.getPercent()));
+                color = bossColorToInt(event.getColor());
+            } catch (Exception e) {
+                continue;
+            }
+            font.drawShadow(poseStack, name, baseX + (barW - font.width(name)) / 2.0f, y, 0xFFFFFFFF);
+            y += 10;
+            RenderUtils.drawRect(poseStack, baseX, y, barW, barH, 0xFF1E293B);
+            int fill = Math.round(barW * pct);
+            if (fill > 0) {
+                RenderUtils.drawRect(poseStack, baseX, y, fill, barH, color);
+            }
+            y += 9;
+        }
+        poseStack.popPose();
+    }
+
+    private void renderArrayList(PoseStack poseStack, Font font, Minecraft mc) {        HUD hud = ModuleManager.INSTANCE.getModule(HUD.class);
         if (hud == null || !hud.isEnabled() || !hud.arrayList.getValue()) return;
 
         List<Module> activeModules = ModuleManager.INSTANCE.getModules().stream()

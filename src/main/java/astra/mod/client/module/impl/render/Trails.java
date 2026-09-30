@@ -10,6 +10,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.math.Matrix4f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
@@ -86,11 +87,7 @@ public class Trails extends Module {
 
         if (renderPoints.size() < 2) return;
 
-        poseStack.pushPose();
-        // Un-rotate camera rotation so trail ribbon is anchored in real 3D world space
-        poseStack.mulPose(com.mojang.math.Vector3f.YP.rotationDegrees(-camera.getYRot() - 180.0F));
-        poseStack.mulPose(com.mojang.math.Vector3f.XP.rotationDegrees(-camera.getXRot()));
-        com.mojang.math.Matrix4f worldMatrix = poseStack.last().pose();
+        Matrix4f worldMatrix = poseStack.last().pose();
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -157,8 +154,6 @@ public class Trails extends Module {
             buffer.vertex(worldMatrix, px, py, pz).color(r, g, b, a).endVertex();
         }
         tesselator.end();
-
-        poseStack.popPose();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         RenderSystem.depthMask(true);

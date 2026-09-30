@@ -3,6 +3,7 @@ package astra.mod.mixin;
 import astra.mod.client.module.impl.combat.Velocity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundChatPacket;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,5 +39,14 @@ public class ClientPacketListenerMixin {
         if (astra.mod.client.module.impl.render.TimeChanger.INSTANCE != null && astra.mod.client.module.impl.render.TimeChanger.INSTANCE.isEnabled()) {
             ci.cancel();
         }
+    }
+
+    @Inject(method = "handleChat", at = @At("HEAD"))
+    private void onHandleChat(ClientboundChatPacket packet, CallbackInfo ci) {
+        try {
+            if (packet.getMessage() != null) {
+                astra.mod.client.module.impl.misc.AutoGG.onChatMessage(packet.getMessage().getString());
+            }
+        } catch (Exception ignored) {}
     }
 }

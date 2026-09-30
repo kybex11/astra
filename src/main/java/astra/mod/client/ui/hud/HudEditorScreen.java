@@ -19,7 +19,18 @@ public class HudEditorScreen extends Screen {
         COMBO("combo"),
         ARMOR("armor"),
         TARGET("target"),
-        MINIMAP("minimap");
+        MINIMAP("minimap"),
+        COORDS("coords"),
+        PING("ping"),
+        DIRECTION("direction"),
+        MOMENTUM("momentum"),
+        SATURATION("saturation"),
+        TOTEM("totem"),
+        ITEMCOUNT("itemcount"),
+        REACH("reach"),
+        STOPWATCH("stopwatch"),
+        EFFECTS("effects"),
+        BOSSBAR("bossbar");
 
         final String id;
         Element(String id) {
@@ -76,6 +87,55 @@ public class HudEditorScreen extends Screen {
                 return Element.MINIMAP;
             }
         }
+        if (Coordinates.INSTANCE != null && Coordinates.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.coordsX, HudConfig.INSTANCE.coordsY, 150, 12)) {
+            return Element.COORDS;
+        }
+        if (PingMod.INSTANCE != null && PingMod.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.pingX, HudConfig.INSTANCE.pingY, 70, 12)) {
+            return Element.PING;
+        }
+        if (DirectionHUD.INSTANCE != null && DirectionHUD.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.directionX, HudConfig.INSTANCE.directionY, 110, 12)) {
+            return Element.DIRECTION;
+        }
+        if (MomentumMod.INSTANCE != null && MomentumMod.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.momentumX, HudConfig.INSTANCE.momentumY, 80, 12)) {
+            return Element.MOMENTUM;
+        }
+        if (SaturationMod.INSTANCE != null && SaturationMod.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.saturationX, HudConfig.INSTANCE.saturationY, 90, 12)) {
+            return Element.SATURATION;
+        }
+        if (TotemCounter.INSTANCE != null && TotemCounter.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.totemX, HudConfig.INSTANCE.totemY, 70, 12)) {
+            return Element.TOTEM;
+        }
+        if (ItemCounter.INSTANCE != null && ItemCounter.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.itemCountX, HudConfig.INSTANCE.itemCountY, 80, 12)) {
+            return Element.ITEMCOUNT;
+        }
+        if (ReachDisplay.INSTANCE != null && ReachDisplay.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.reachX, HudConfig.INSTANCE.reachY, 80, 12)) {
+            return Element.REACH;
+        }
+        if (StopwatchMod.INSTANCE != null && StopwatchMod.INSTANCE.isEnabled()
+                && isInside(mx, my, HudConfig.INSTANCE.stopwatchX, HudConfig.INSTANCE.stopwatchY, 80, 12)) {
+            return Element.STOPWATCH;
+        }
+        if (StatusEffectHUD.INSTANCE != null && StatusEffectHUD.INSTANCE.isEnabled()) {
+            int fx = HudConfig.INSTANCE.effectsX == -1 ? (width - 118) : HudConfig.INSTANCE.effectsX;
+            int fy = HudConfig.INSTANCE.effectsY == -1 ? 8 : HudConfig.INSTANCE.effectsY;
+            if (isInside(mx, my, fx, fy, 118, 60)) {
+                return Element.EFFECTS;
+            }
+        }
+        if (BossBarMod.INSTANCE != null && BossBarMod.INSTANCE.shouldShowCustom()) {
+            int bx = HudConfig.INSTANCE.bossBarX == -1 ? (width - 182) / 2 : HudConfig.INSTANCE.bossBarX;
+            if (isInside(mx, my, bx, HudConfig.INSTANCE.bossBarY, 182, 16)) {
+                return Element.BOSSBAR;
+            }
+        }
         return null;
     }
 
@@ -125,6 +185,42 @@ public class HudEditorScreen extends Screen {
             int mapSize = (int) MiniMap.INSTANCE.size.getValue().doubleValue();
             drawBoundingBox(poseStack, Element.MINIMAP, HudConfig.INSTANCE.miniMapX, HudConfig.INSTANCE.miniMapY, mapSize, mapSize, "MiniMap", mouseX, mouseY, accent);
         }
+        if (Coordinates.INSTANCE != null && Coordinates.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.COORDS, HudConfig.INSTANCE.coordsX, HudConfig.INSTANCE.coordsY, 150, 12, "Coords", mouseX, mouseY, accent);
+        }
+        if (PingMod.INSTANCE != null && PingMod.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.PING, HudConfig.INSTANCE.pingX, HudConfig.INSTANCE.pingY, 70, 12, "Ping", mouseX, mouseY, accent);
+        }
+        if (DirectionHUD.INSTANCE != null && DirectionHUD.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.DIRECTION, HudConfig.INSTANCE.directionX, HudConfig.INSTANCE.directionY, 110, 12, "Direction", mouseX, mouseY, accent);
+        }
+        if (MomentumMod.INSTANCE != null && MomentumMod.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.MOMENTUM, HudConfig.INSTANCE.momentumX, HudConfig.INSTANCE.momentumY, 80, 12, "Speed", mouseX, mouseY, accent);
+        }
+        if (SaturationMod.INSTANCE != null && SaturationMod.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.SATURATION, HudConfig.INSTANCE.saturationX, HudConfig.INSTANCE.saturationY, 90, 12, "Food", mouseX, mouseY, accent);
+        }
+        if (TotemCounter.INSTANCE != null && TotemCounter.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.TOTEM, HudConfig.INSTANCE.totemX, HudConfig.INSTANCE.totemY, 70, 12, "Totems", mouseX, mouseY, accent);
+        }
+        if (ItemCounter.INSTANCE != null && ItemCounter.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.ITEMCOUNT, HudConfig.INSTANCE.itemCountX, HudConfig.INSTANCE.itemCountY, 80, 12, "Items", mouseX, mouseY, accent);
+        }
+        if (ReachDisplay.INSTANCE != null && ReachDisplay.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.REACH, HudConfig.INSTANCE.reachX, HudConfig.INSTANCE.reachY, 80, 12, "Reach", mouseX, mouseY, accent);
+        }
+        if (StopwatchMod.INSTANCE != null && StopwatchMod.INSTANCE.isEnabled()) {
+            drawBoundingBox(poseStack, Element.STOPWATCH, HudConfig.INSTANCE.stopwatchX, HudConfig.INSTANCE.stopwatchY, 80, 12, "Timer", mouseX, mouseY, accent);
+        }
+        if (StatusEffectHUD.INSTANCE != null && StatusEffectHUD.INSTANCE.isEnabled()) {
+            int fx = HudConfig.INSTANCE.effectsX == -1 ? (width - 118) : HudConfig.INSTANCE.effectsX;
+            int fy = HudConfig.INSTANCE.effectsY == -1 ? 8 : HudConfig.INSTANCE.effectsY;
+            drawBoundingBox(poseStack, Element.EFFECTS, fx, fy, 118, 60, "Effects", mouseX, mouseY, accent);
+        }
+        if (BossBarMod.INSTANCE != null && BossBarMod.INSTANCE.shouldShowCustom()) {
+            int bx = HudConfig.INSTANCE.bossBarX == -1 ? (width - 182) / 2 : HudConfig.INSTANCE.bossBarX;
+            drawBoundingBox(poseStack, Element.BOSSBAR, bx, HudConfig.INSTANCE.bossBarY, 182, 16, "BossBar", mouseX, mouseY, accent);
+        }
 
         // Dragging update
         if (draggingElement != null) {
@@ -159,6 +255,50 @@ public class HudEditorScreen extends Screen {
                     int mapSize = (int) MiniMap.INSTANCE.size.getValue().doubleValue();
                     HudConfig.INSTANCE.miniMapX = Math.max(0, Math.min(width - mapSize, newX));
                     HudConfig.INSTANCE.miniMapY = Math.max(0, Math.min(height - mapSize, newY));
+                    break;
+                case COORDS:
+                    HudConfig.INSTANCE.coordsX = Math.max(0, Math.min(width - 150, newX));
+                    HudConfig.INSTANCE.coordsY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case PING:
+                    HudConfig.INSTANCE.pingX = Math.max(0, Math.min(width - 70, newX));
+                    HudConfig.INSTANCE.pingY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case DIRECTION:
+                    HudConfig.INSTANCE.directionX = Math.max(0, Math.min(width - 110, newX));
+                    HudConfig.INSTANCE.directionY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case MOMENTUM:
+                    HudConfig.INSTANCE.momentumX = Math.max(0, Math.min(width - 80, newX));
+                    HudConfig.INSTANCE.momentumY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case SATURATION:
+                    HudConfig.INSTANCE.saturationX = Math.max(0, Math.min(width - 90, newX));
+                    HudConfig.INSTANCE.saturationY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case TOTEM:
+                    HudConfig.INSTANCE.totemX = Math.max(0, Math.min(width - 70, newX));
+                    HudConfig.INSTANCE.totemY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case ITEMCOUNT:
+                    HudConfig.INSTANCE.itemCountX = Math.max(0, Math.min(width - 80, newX));
+                    HudConfig.INSTANCE.itemCountY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case REACH:
+                    HudConfig.INSTANCE.reachX = Math.max(0, Math.min(width - 80, newX));
+                    HudConfig.INSTANCE.reachY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case STOPWATCH:
+                    HudConfig.INSTANCE.stopwatchX = Math.max(0, Math.min(width - 80, newX));
+                    HudConfig.INSTANCE.stopwatchY = Math.max(0, Math.min(height - 12, newY));
+                    break;
+                case EFFECTS:
+                    HudConfig.INSTANCE.effectsX = Math.max(0, Math.min(width - 118, newX));
+                    HudConfig.INSTANCE.effectsY = Math.max(0, Math.min(height - 60, newY));
+                    break;
+                case BOSSBAR:
+                    HudConfig.INSTANCE.bossBarX = Math.max(0, Math.min(width - 182, newX));
+                    HudConfig.INSTANCE.bossBarY = Math.max(0, Math.min(height - 16, newY));
                     break;
             }
         }
@@ -224,6 +364,69 @@ public class HudEditorScreen extends Screen {
                     return true;
                 }
             }
+            if (Coordinates.INSTANCE != null && Coordinates.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.coordsX, HudConfig.INSTANCE.coordsY, 150, 12)) {
+                startDrag(Element.COORDS, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.coordsX, HudConfig.INSTANCE.coordsY);
+                return true;
+            }
+            if (PingMod.INSTANCE != null && PingMod.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.pingX, HudConfig.INSTANCE.pingY, 70, 12)) {
+                startDrag(Element.PING, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.pingX, HudConfig.INSTANCE.pingY);
+                return true;
+            }
+            if (DirectionHUD.INSTANCE != null && DirectionHUD.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.directionX, HudConfig.INSTANCE.directionY, 110, 12)) {
+                startDrag(Element.DIRECTION, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.directionX, HudConfig.INSTANCE.directionY);
+                return true;
+            }
+            if (MomentumMod.INSTANCE != null && MomentumMod.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.momentumX, HudConfig.INSTANCE.momentumY, 80, 12)) {
+                startDrag(Element.MOMENTUM, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.momentumX, HudConfig.INSTANCE.momentumY);
+                return true;
+            }
+            if (SaturationMod.INSTANCE != null && SaturationMod.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.saturationX, HudConfig.INSTANCE.saturationY, 90, 12)) {
+                startDrag(Element.SATURATION, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.saturationX, HudConfig.INSTANCE.saturationY);
+                return true;
+            }
+            if (TotemCounter.INSTANCE != null && TotemCounter.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.totemX, HudConfig.INSTANCE.totemY, 70, 12)) {
+                startDrag(Element.TOTEM, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.totemX, HudConfig.INSTANCE.totemY);
+                return true;
+            }
+            if (ItemCounter.INSTANCE != null && ItemCounter.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.itemCountX, HudConfig.INSTANCE.itemCountY, 80, 12)) {
+                startDrag(Element.ITEMCOUNT, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.itemCountX, HudConfig.INSTANCE.itemCountY);
+                return true;
+            }
+            if (ReachDisplay.INSTANCE != null && ReachDisplay.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.reachX, HudConfig.INSTANCE.reachY, 80, 12)) {
+                startDrag(Element.REACH, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.reachX, HudConfig.INSTANCE.reachY);
+                return true;
+            }
+            if (StopwatchMod.INSTANCE != null && StopwatchMod.INSTANCE.isEnabled()
+                    && isInside(mouseX, mouseY, HudConfig.INSTANCE.stopwatchX, HudConfig.INSTANCE.stopwatchY, 80, 12)) {
+                startDrag(Element.STOPWATCH, (int) mouseX, (int) mouseY, HudConfig.INSTANCE.stopwatchX, HudConfig.INSTANCE.stopwatchY);
+                return true;
+            }
+            if (StatusEffectHUD.INSTANCE != null && StatusEffectHUD.INSTANCE.isEnabled()) {
+                int fx = HudConfig.INSTANCE.effectsX == -1 ? (width - 118) : HudConfig.INSTANCE.effectsX;
+                int fy = HudConfig.INSTANCE.effectsY == -1 ? 8 : HudConfig.INSTANCE.effectsY;
+                if (isInside(mouseX, mouseY, fx, fy, 118, 60)) {
+                    HudConfig.INSTANCE.effectsX = fx;
+                    HudConfig.INSTANCE.effectsY = fy;
+                    startDrag(Element.EFFECTS, (int) mouseX, (int) mouseY, fx, fy);
+                    return true;
+                }
+            }
+            if (BossBarMod.INSTANCE != null && BossBarMod.INSTANCE.shouldShowCustom()) {
+                int bx = HudConfig.INSTANCE.bossBarX == -1 ? (width - 182) / 2 : HudConfig.INSTANCE.bossBarX;
+                if (isInside(mouseX, mouseY, bx, HudConfig.INSTANCE.bossBarY, 182, 16)) {
+                    HudConfig.INSTANCE.bossBarX = bx;
+                    startDrag(Element.BOSSBAR, (int) mouseX, (int) mouseY, bx, HudConfig.INSTANCE.bossBarY);
+                    return true;
+                }
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -239,6 +442,24 @@ public class HudEditorScreen extends Screen {
         HudConfig.INSTANCE.keystrokesY = round10(HudConfig.INSTANCE.keystrokesY);
         HudConfig.INSTANCE.miniMapX = round10(HudConfig.INSTANCE.miniMapX);
         HudConfig.INSTANCE.miniMapY = round10(HudConfig.INSTANCE.miniMapY);
+        HudConfig.INSTANCE.coordsX = round10(HudConfig.INSTANCE.coordsX);
+        HudConfig.INSTANCE.coordsY = round10(HudConfig.INSTANCE.coordsY);
+        HudConfig.INSTANCE.pingX = round10(HudConfig.INSTANCE.pingX);
+        HudConfig.INSTANCE.pingY = round10(HudConfig.INSTANCE.pingY);
+        HudConfig.INSTANCE.directionX = round10(HudConfig.INSTANCE.directionX);
+        HudConfig.INSTANCE.directionY = round10(HudConfig.INSTANCE.directionY);
+        HudConfig.INSTANCE.momentumX = round10(HudConfig.INSTANCE.momentumX);
+        HudConfig.INSTANCE.momentumY = round10(HudConfig.INSTANCE.momentumY);
+        HudConfig.INSTANCE.saturationX = round10(HudConfig.INSTANCE.saturationX);
+        HudConfig.INSTANCE.saturationY = round10(HudConfig.INSTANCE.saturationY);
+        HudConfig.INSTANCE.totemX = round10(HudConfig.INSTANCE.totemX);
+        HudConfig.INSTANCE.totemY = round10(HudConfig.INSTANCE.totemY);
+        HudConfig.INSTANCE.itemCountX = round10(HudConfig.INSTANCE.itemCountX);
+        HudConfig.INSTANCE.itemCountY = round10(HudConfig.INSTANCE.itemCountY);
+        HudConfig.INSTANCE.reachX = round10(HudConfig.INSTANCE.reachX);
+        HudConfig.INSTANCE.reachY = round10(HudConfig.INSTANCE.reachY);
+        HudConfig.INSTANCE.stopwatchX = round10(HudConfig.INSTANCE.stopwatchX);
+        HudConfig.INSTANCE.stopwatchY = round10(HudConfig.INSTANCE.stopwatchY);
     }
 
     private int round10(int val) {

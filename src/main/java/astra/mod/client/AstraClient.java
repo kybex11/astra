@@ -1,7 +1,7 @@
 package astra.mod.client;
 
 import astra.mod.client.module.ModuleManager;
-import astra.mod.client.ui.clickgui.ClickGuiScreen;
+import astra.mod.client.ui.shadcn.ShadcnGuiScreen;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -47,9 +47,18 @@ public class AstraClient implements ClientModInitializer {
                 "category.astra"
         ));
 
-        // Register 3D World Render Event for 3D Box ESP & Tracers
+        // Register 3D World Render Event for 3D Box ESP, Tracers, Trails & XRay
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.LAST.register(context -> {
             astra.mod.client.util.Render3D.renderWorld(context.matrixStack(), context.camera(), context.tickDelta());
+            if (astra.mod.client.module.impl.render.Trails.INSTANCE != null) {
+                astra.mod.client.module.impl.render.Trails.INSTANCE.render3D(context.matrixStack(), context.camera(), context.tickDelta());
+            }
+            if (astra.mod.client.module.impl.render.XRay.INSTANCE != null) {
+                astra.mod.client.module.impl.render.XRay.INSTANCE.render3D(context.matrixStack(), context.camera(), context.tickDelta());
+            }
+            if (astra.mod.client.module.impl.render.Waypoints.INSTANCE != null) {
+                astra.mod.client.module.impl.render.Waypoints.INSTANCE.render3D(context.matrixStack(), context.camera(), context.tickDelta());
+            }
         });
 
         // Client Tick Handler
@@ -75,7 +84,7 @@ public class AstraClient implements ClientModInitializer {
                 // Check key mapping click
                 while (clickGuiKey.consumeClick()) {
                     if (client.screen == null) {
-                        client.setScreen(ClickGuiScreen.INSTANCE);
+                        client.setScreen(ShadcnGuiScreen.INSTANCE);
                     }
                 }
             }

@@ -7,11 +7,17 @@ import astra.mod.client.module.impl.combat.EntityLauncher;
 import astra.mod.client.module.impl.combat.KillAura;
 import astra.mod.client.module.impl.combat.Reach;
 import astra.mod.client.module.impl.combat.Velocity;
+import astra.mod.client.module.impl.misc.AutoGG;
+import astra.mod.client.module.impl.misc.AutoText;
+import astra.mod.client.module.impl.misc.ChatMod;
 import astra.mod.client.module.impl.movement.FastClimb;
 import astra.mod.client.module.impl.movement.Fly;
 import astra.mod.client.module.impl.movement.FreeLook;
+import astra.mod.client.module.impl.movement.Snaplook;
 import astra.mod.client.module.impl.movement.Speed;
 import astra.mod.client.module.impl.movement.Sprint;
+import astra.mod.client.module.impl.movement.ToggleSneak;
+import astra.mod.client.module.impl.movement.ToggleSprint;
 import astra.mod.client.module.impl.player.AutoTotem;
 import astra.mod.client.module.impl.player.FastPlace;
 import astra.mod.client.module.impl.player.GodMode;
@@ -44,6 +50,9 @@ public class ModuleManager {
 
         // Movement
         register(new Sprint());
+        register(new ToggleSprint());
+        register(new ToggleSneak());
+        register(new Snaplook());
         register(FastClimb.INSTANCE);
         register(astra.mod.client.module.impl.movement.AntiSwimming.INSTANCE);
         register(new Fly());
@@ -73,6 +82,31 @@ public class ModuleManager {
         register(new Trails());
         register(Zoom.INSTANCE);
         register(XRay.INSTANCE);
+        register(new Coordinates());
+        register(new DirectionHUD());
+        register(new PingMod());
+        register(new MomentumMod());
+        register(new SaturationMod());
+        register(new TotemCounter());
+        register(new ItemCounter());
+        register(new ReachDisplay());
+        register(new StopwatchMod());
+        register(new StatusEffectHUD());
+        register(new Cooldowns());
+        register(new DamageTint());
+        register(new BossBarMod());
+        register(new FOVChanger());
+        register(new FogCustomizer());
+        register(new ItemPhysics());
+        register(new MobSize());
+        register(new NametagMod());
+        register(new Waypoints());
+        register(new OofMod());
+
+        // Misc
+        register(new AutoText());
+        register(new AutoGG());
+        register(new ChatMod());
 
         // Player & Building
         register(new NoFall());

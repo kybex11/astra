@@ -564,8 +564,10 @@
       },
       mounted() {
         ipcRenderer.on('launch-status', (event, res) => {
-          this.isLaunching = false;
-          this.statusMessage = '✓ ' + res.message;
+          const msg = (res && res.message) || '';
+          const starting = msg.indexOf('запускается') !== -1 || msg.indexOf('ЗАПУСК') !== -1;
+          this.isLaunching = !!starting && !!res.success;
+          this.statusMessage = (res.success ? '✓ ' : '✕ ') + msg;
         });
       }
     });

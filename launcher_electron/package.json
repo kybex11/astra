@@ -15,7 +15,13 @@
     },
     "directories": {
       "output": "dist"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "../installer/astra-1.0.0.jar",
+        "to": "astra-1.0.0.jar"
+      }
+    ]
   },
   "devDependencies": {
     "electron": "^41.7.1",
