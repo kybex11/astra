@@ -14,6 +14,42 @@ public class CosmeticManager {
 
     private String systemNick = "";
     private boolean capeEnabled = true;
+    private boolean wingsEnabled = true;
+    private boolean haloEnabled = true;
+    private boolean hornsEnabled = false;
+    private String wingsStyle = "Dragon"; // Dragon, Angel, Neon
+
+    public boolean isWingsEnabled() {
+        return wingsEnabled;
+    }
+
+    public void setWingsEnabled(boolean wingsEnabled) {
+        this.wingsEnabled = wingsEnabled;
+    }
+
+    public boolean isHaloEnabled() {
+        return haloEnabled;
+    }
+
+    public void setHaloEnabled(boolean haloEnabled) {
+        this.haloEnabled = haloEnabled;
+    }
+
+    public boolean isHornsEnabled() {
+        return hornsEnabled;
+    }
+
+    public void setHornsEnabled(boolean hornsEnabled) {
+        this.hornsEnabled = hornsEnabled;
+    }
+
+    public String getWingsStyle() {
+        return wingsStyle;
+    }
+
+    public void setWingsStyle(String wingsStyle) {
+        this.wingsStyle = wingsStyle;
+    }
 
     public boolean hasCustomName() {
         return systemNick != null && !systemNick.trim().isEmpty();

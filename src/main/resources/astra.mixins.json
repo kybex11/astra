@@ -30,7 +30,9 @@
 		"FogRendererMixin",
 		"LivingEntityRendererMixin",
 		"ItemEntityRendererMixin",
-		"EntityRendererMixin"
+		"EntityRendererMixin",
+		"PlayerTabOverlayMixin",
+		"PlayerRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

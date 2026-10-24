@@ -16,6 +16,25 @@ public abstract class CameraMixin {
     @Shadow
     protected abstract void setRotation(float yRot, float xRot);
 
+    @Shadow
+    private float eyeHeight;
+
+    @Shadow
+    private float eyeHeightOld;
+
+    @Shadow
+    private Entity entity;
+
+    @Inject(method = "tick", at = @At("RETURN"))
+    private void onCameraTick(CallbackInfo ci) {
+        if (astra.mod.client.module.impl.movement.InstantSneak.INSTANCE != null
+                && astra.mod.client.module.impl.movement.InstantSneak.INSTANCE.isEnabled()
+                && this.entity != null) {
+            this.eyeHeight = this.entity.getEyeHeight();
+            this.eyeHeightOld = this.eyeHeight;
+        }
+    }
+
     @Inject(method = "setup", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", shift = At.Shift.AFTER))
     private void onSetupRotation(BlockGetter blockGetter, Entity entity, boolean thirdPerson, boolean mirrored, float partialTicks, CallbackInfo ci) {
         if (FreeLook.isActive()) {

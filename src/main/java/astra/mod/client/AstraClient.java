@@ -23,6 +23,7 @@ import java.io.InputStream;
 public class AstraClient implements ClientModInitializer {
     public static final Logger LOGGER = LogManager.getLogger("astra-client");
     public static KeyMapping clickGuiKey;
+    public static KeyMapping worldMapKey;
 
     private boolean initialized = false;
     private int titleTickTimer = 0;
@@ -47,6 +48,35 @@ public class AstraClient implements ClientModInitializer {
                 "category.astra"
         ));
 
+        // Keybind for Big World Map (M)
+        worldMapKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.astra.worldmap",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_M,
+                "category.astra"
+        ));
+
+        // Astra Client Presence Network Handshake for Tab badges & client detection
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            try {
+                net.minecraft.network.FriendlyByteBuf buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+                buf.writeUUID(client.getUser().getGameProfile().getId());
+                buf.writeUtf(client.getUser().getName(), 32);
+                sender.sendPacket(astra.mod.client.presence.AstraPresenceManager.CHANNEL_PRESENCE, buf);
+            } catch (Exception ignored) {}
+        });
+
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(
+                astra.mod.client.presence.AstraPresenceManager.CHANNEL_PRESENCE,
+                (client, handler, buf, responseSender) -> {
+                    try {
+                        java.util.UUID uuid = buf.readUUID();
+                        String name = buf.readUtf(32);
+                        client.execute(() -> astra.mod.client.presence.AstraPresenceManager.INSTANCE.registerUser(uuid, name));
+                    } catch (Exception ignored) {}
+                }
+        );
+
         // Register 3D World Render Event for 3D Box ESP, Tracers, Trails & XRay
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.LAST.register(context -> {
             astra.mod.client.util.Render3D.renderWorld(context.matrixStack(), context.camera(), context.tickDelta());
@@ -65,6 +95,7 @@ public class AstraClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             // Set Window Icon, PvP Pack export, and Initial Title once window is ready
             if (!initialized && client.getWindow() != null) {
+                astra.mod.client.storage.AstraDatabase.INSTANCE.init();
                 applyWindowCustomizations(client);
                 ensurePvPPackExported(client);
                 astra.mod.client.config.ConfigManager.INSTANCE.load();
@@ -85,6 +116,12 @@ public class AstraClient implements ClientModInitializer {
                 while (clickGuiKey.consumeClick()) {
                     if (client.screen == null) {
                         client.setScreen(ShadcnGuiScreen.INSTANCE);
+                    }
+                }
+
+                while (worldMapKey.consumeClick()) {
+                    if (client.screen == null) {
+                        client.setScreen(astra.mod.client.ui.map.WorldMapScreen.INSTANCE);
                     }
                 }
             }

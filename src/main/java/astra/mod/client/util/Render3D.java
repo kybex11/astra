@@ -32,6 +32,7 @@ public class Render3D {
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
         RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
         RenderSystem.lineWidth(1.5f);
 
         Tesselator tesselator = Tesselator.getInstance();
@@ -49,20 +50,27 @@ public class Render3D {
 
             if (!esp.shouldGlow(e)) continue;
 
-            // Exact lerped position offset from camera
-            double lerpX = MthLerp(tickDelta, e.xOld, e.getX());
-            double lerpY = MthLerp(tickDelta, e.yOld, e.getY());
-            double lerpZ = MthLerp(tickDelta, e.zOld, e.getZ());
+            // Accurate bounding box tracked with interpolation
+            net.minecraft.world.phys.AABB bb = e.getBoundingBox();
+            double dx = 0.0;
+            double dy = 0.0;
+            double dz = 0.0;
 
-            float w = e.getBbWidth() / 2.0f;
-            float h = e.getBbHeight();
+            // Check for sudden teleport / spawn / riding anomalies
+            if (Math.abs(e.getX() - e.xOld) < 8.0 && Math.abs(e.getY() - e.yOld) < 8.0 && Math.abs(e.getZ() - e.zOld) < 8.0) {
+                dx = MthLerp(tickDelta, e.xOld, e.getX()) - e.getX();
+                dy = MthLerp(tickDelta, e.yOld, e.getY()) - e.getY();
+                dz = MthLerp(tickDelta, e.zOld, e.getZ()) - e.getZ();
+            }
 
-            float minX = (float) (lerpX - w - camPos.x);
-            float maxX = (float) (lerpX + w - camPos.x);
-            float minY = (float) (lerpY - camPos.y);
-            float maxY = (float) (lerpY + h - camPos.y);
-            float minZ = (float) (lerpZ - w - camPos.z);
-            float maxZ = (float) (lerpZ + w - camPos.z);
+            net.minecraft.world.phys.AABB box = bb.move(dx - camPos.x, dy - camPos.y, dz - camPos.z);
+
+            float minX = (float) box.minX;
+            float maxX = (float) box.maxX;
+            float minY = (float) box.minY;
+            float maxY = (float) box.maxY;
+            float minZ = (float) box.minZ;
+            float maxZ = (float) box.maxZ;
 
             // 1. Draw 3D Box (if enabled)
             if (esp.box3d.getValue()) {
@@ -74,13 +82,20 @@ public class Render3D {
 
             // 2. Draw Tracers (if enabled)
             if (esp.tracers.getValue()) {
-                double playerX = MthLerp(tickDelta, mc.player.xOld, mc.player.getX()) - camPos.x;
-                double playerY = MthLerp(tickDelta, mc.player.yOld, mc.player.getY()) - camPos.y + mc.player.getEyeHeight() * 0.5;
-                double playerZ = MthLerp(tickDelta, mc.player.zOld, mc.player.getZ()) - camPos.z;
+                float startX = 0.0f;
+                float startY = 0.0f;
+                float startZ = 0.0f;
 
+                if (mc.options.getCameraType() != net.minecraft.client.CameraType.FIRST_PERSON && mc.player != null) {
+                    startX = (float) (MthLerp(tickDelta, mc.player.xOld, mc.player.getX()) - camPos.x);
+                    startY = (float) (MthLerp(tickDelta, mc.player.yOld, mc.player.getY()) + mc.player.getEyeHeight() * 0.5 - camPos.y);
+                    startZ = (float) (MthLerp(tickDelta, mc.player.zOld, mc.player.getZ()) - camPos.z);
+                }
+
+                Vec3 center = box.getCenter();
                 buffer.begin(1, DefaultVertexFormat.POSITION_COLOR);
-                buffer.vertex(matrix, (float) playerX, (float) playerY, (float) playerZ).color(r, g, b, 0.7f).endVertex();
-                buffer.vertex(matrix, (float) (lerpX - camPos.x), (float) (lerpY + h * 0.5f - camPos.y), (float) (lerpZ - camPos.z)).color(r, g, b, 0.7f).endVertex();
+                buffer.vertex(matrix, startX, startY, startZ).color(r, g, b, 0.7f).endVertex();
+                buffer.vertex(matrix, (float) center.x, (float) center.y, (float) center.z).color(r, g, b, 0.7f).endVertex();
                 buffer.end();
                 BufferUploader.end(buffer);
             }
@@ -109,6 +124,8 @@ public class Render3D {
             }
         }
 
+        RenderSystem.lineWidth(1.0f);
+        RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();

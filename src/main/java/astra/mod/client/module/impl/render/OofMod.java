@@ -9,6 +9,8 @@ public class OofMod extends Module {
     public static OofMod INSTANCE;
 
     private boolean wasDead = false;
+    private long lastPlayTime = 0;
+    private static final long COOLDOWN_MS = 500;
 
     public OofMod() {
         super("OofMod", "Забавный звук при смерти игрока", Category.RENDER);
@@ -24,12 +26,15 @@ public class OofMod extends Module {
         }
         boolean dead = mc.player.isDeadOrDying() || mc.player.getHealth() <= 0.0f;
         if (dead && !wasDead) {
-            try {
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BASEDRUM, 0.6f, 1.0f));
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_DEATH, 1.2f, 0.5f));
-            } catch (Exception ignored) {}
+            long now = System.currentTimeMillis();
+            if (now - lastPlayTime > COOLDOWN_MS) {
+                lastPlayTime = now;
+                try {
+                    mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BASEDRUM, 0.6f, 1.0f));
+                    mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_DEATH, 1.2f, 0.5f));
+                } catch (Exception ignored) {}
+            }
         }
-        if (!dead) wasDead = false;
-        else wasDead = true;
+        wasDead = dead;
     }
 }

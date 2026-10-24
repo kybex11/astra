@@ -662,6 +662,34 @@ public class HudRenderer {
             }
         }
 
+        // Render Waypoints on MiniMap
+        String curDim = "";
+        try { curDim = mc.level.dimension().location().getPath(); } catch (Exception ignored) {}
+        for (astra.mod.client.waypoints.WaypointManager.Waypoint wp : astra.mod.client.waypoints.WaypointManager.getAll()) {
+            if (!curDim.isEmpty() && !curDim.equalsIgnoreCase(wp.dim)) continue;
+            double dx = wp.x - mc.player.getX();
+            double dz = wp.z - mc.player.getZ();
+            float maxPixelR = radius - 6.0f;
+            double dist = Math.sqrt(dx * dx + dz * dz);
+
+            float px, py;
+            if (dist <= range) {
+                px = (float) (cx + (dx / range) * maxPixelR);
+                py = (float) (cy + (dz / range) * maxPixelR);
+            } else {
+                double angle = Math.atan2(dz, dx);
+                px = (float) (cx + Math.cos(angle) * maxPixelR);
+                py = (float) (cy + Math.sin(angle) * maxPixelR);
+            }
+
+            RenderUtils.drawBorderedRect(poseStack, (int) px - 2, (int) py - 2, 5, 5, 1, 0xFF38BDF8, 0xFFFFFFFF);
+            poseStack.pushPose();
+            poseStack.translate(px, py - 7, 0);
+            poseStack.scale(0.5f, 0.5f, 1.0f);
+            font.drawShadow(poseStack, wp.name, -font.width(wp.name) / 2.0f, 0, 0xFF38BDF8);
+            poseStack.popPose();
+        }
+
         // 4. Player center marker & view needle
         RenderUtils.drawRect(poseStack, (int) cx - 2, (int) cy - 2, 4, 4, 0xFF10B981);
         double rad = Math.toRadians(mc.player.yRot + 90.0f);

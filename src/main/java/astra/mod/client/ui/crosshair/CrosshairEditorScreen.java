@@ -26,14 +26,22 @@ public class CrosshairEditorScreen extends Screen {
     private int mouseButton = 0;
 
     private static final int[] PALETTE = new int[]{
-            1, // Dynamic Theme Accent
+            1,          // Dynamic Theme Accent
             0xFFFFFFFF, // Pure White
+            0xFF94A3B8, // Light Slate
+            0xFF334155, // Dark Slate
             0xFFEF4444, // Crimson Red
-            0xFF06B6D4, // Neon Cyan
+            0xFFF97316, // Vibrant Orange
+            0xFFF59E0B, // Amber Gold
+            0xFFEAB308, // Cyber Yellow
+            0xFF84CC16, // Lime
             0xFF10B981, // Emerald Green
-            0xFFF59E0B, // Golden Yellow
+            0xFF06B6D4, // Neon Cyan
+            0xFF3B82F6, // Sky Blue
+            0xFF6366F1, // Indigo
             0xFFA855F7, // Neon Purple
-            0xFFEC4899  // Hot Pink
+            0xFFEC4899, // Hot Pink
+            0xFFF43F5E  // Rose Red
     };
 
     public CrosshairEditorScreen() {
@@ -131,14 +139,16 @@ public class CrosshairEditorScreen extends Screen {
         RenderUtils.drawRoundedBorderedRect(poseStack, panelX, symY, panelW, 20, 4, 1, symmetry4X ? 0xDD1E1B4B : 0xAA0F172A, symmetry4X ? accent : 0xFF334155);
         font.drawShadow(poseStack, "Симметрия 4X: " + (symmetry4X ? "[ВКЛ ✓]" : "[ВЫКЛ]"), panelX + 8, symY + 6, symmetry4X ? 0xFFFFFFFF : 0xFF94A3B8);
 
-        // Color Palette
+        // Color Palette (8 columns x 2 rows)
         int palY = symY + 28;
         font.drawShadow(poseStack, "ПАЛИТРА ЦВЕТОВ", panelX, palY, 0xFF94A3B8);
 
-        int colorSize = (panelW - 21) / 4;
+        int cols = 8;
+        int gap = 4;
+        int colorSize = (panelW - (cols - 1) * gap) / cols;
         for (int i = 0; i < PALETTE.length; i++) {
-            int cx = panelX + (i % 4) * (colorSize + 7);
-            int cy = palY + 12 + (i / 4) * (colorSize + 7);
+            int cx = panelX + (i % cols) * (colorSize + gap);
+            int cy = palY + 12 + (i / cols) * (colorSize + gap);
             int c = PALETTE[i];
             int drawC = (c == 1) ? accent : c;
 
@@ -150,7 +160,7 @@ public class CrosshairEditorScreen extends Screen {
         }
 
         // Quick Presets
-        int preY = palY + 70;
+        int preY = palY + 12 + 2 * (colorSize + gap) + 8;
         font.drawShadow(poseStack, "ПРЕСЕТЫ", panelX, preY, 0xFF94A3B8);
 
         int pBtnW = (panelW - 6) / 2;
@@ -254,12 +264,14 @@ public class CrosshairEditorScreen extends Screen {
             return true;
         }
 
-        // Palette
+        // Palette (8 columns x 2 rows)
         int palY = symY + 28;
-        int colorSize = (panelW - 21) / 4;
+        int cols = 8;
+        int gap = 4;
+        int colorSize = (panelW - (cols - 1) * gap) / cols;
         for (int i = 0; i < PALETTE.length; i++) {
-            int cx = panelX + (i % 4) * (colorSize + 7);
-            int cy = palY + 12 + (i / 4) * (colorSize + 7);
+            int cx = panelX + (i % cols) * (colorSize + gap);
+            int cy = palY + 12 + (i / cols) * (colorSize + gap);
             if (mouseX >= cx && mouseX <= cx + colorSize && mouseY >= cy && mouseY <= cy + colorSize) {
                 selectedColor = PALETTE[i];
                 currentTool = Tool.PENCIL;
@@ -268,7 +280,7 @@ public class CrosshairEditorScreen extends Screen {
         }
 
         // Presets
-        int preY = palY + 70;
+        int preY = palY + 12 + 2 * (colorSize + gap) + 8;
         int pBtnW = (panelW - 6) / 2;
 
         if (mouseX >= panelX && mouseX <= panelX + pBtnW && mouseY >= preY + 12 && mouseY <= preY + 30) {

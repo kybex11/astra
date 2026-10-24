@@ -45,6 +45,9 @@ public class ShadcnGuiScreen extends Screen {
 
     private Tab currentTab = Tab.COMBAT;
     private final Map<Module, Boolean> expandedModules = new HashMap<>();
+    private final Map<Module, Animation> moduleAnims = new HashMap<>();
+    private final Map<Module, Animation> expandAnims = new HashMap<>();
+    private final Map<Tab, Animation> tabAnims = new HashMap<>();
 
     private NumberSetting draggingNumber = null;
     private Module bindingModule = null;
@@ -56,9 +59,15 @@ public class ShadcnGuiScreen extends Screen {
     private long openTime = 0;
 
     private final ParticleSystem particles = new ParticleSystem();
+    private final Animation openAnim = new Animation(0, 0.08f);
+    private final Animation hoverAnim = new Animation(0, 0.15f);
+    private final Animation switchAnim = new Animation(0, 0.12f);
 
     public ShadcnGuiScreen() {
         super(new TextComponent("Astra Client"));
+        for (Tab tab : Tab.values()) {
+            tabAnims.put(tab, new Animation(0, 0.1f));
+        }
     }
 
     @Override
@@ -70,6 +79,8 @@ public class ShadcnGuiScreen extends Screen {
         bindingModule = null;
         editingSearch = false;
         openTime = System.currentTimeMillis();
+        openAnim.set(0);
+        openAnim.setTarget(1);
     }
 
     @Override
@@ -86,9 +97,9 @@ public class ShadcnGuiScreen extends Screen {
 
         renderBackground(poseStack, mouseX, mouseY, delta);
 
-        float animProgress = Math.min(1.0f, (System.currentTimeMillis() - openTime) / 200.0f);
-        float ease = (float) Math.sin(animProgress * Math.PI / 2.0);
-        float scaleAnim = 0.94f + 0.06f * ease;
+        float openProgress = openAnim.get();
+        float scaleAnim = 0.94f + 0.06f * openProgress;
+        float alpha = openProgress;
 
         poseStack.pushPose();
         poseStack.translate(width / 2.0, height / 2.0, 0);
@@ -146,11 +157,21 @@ public class ShadcnGuiScreen extends Screen {
             boolean active = (tab == currentTab);
             boolean hovered = mouseX >= winX + 8 && mouseX <= winX + sideW - 8 && mouseY >= tabY && mouseY <= tabY + 24;
 
+            Animation tabAnim = tabAnims.get(tab);
             if (active) {
-                RenderUtils.drawRoundedBorderedRect(poseStack, winX + 8, tabY, sideW - 16, 24, 8, 1, 0xEE1E1B4B, accent);
-                RenderUtils.drawRoundedRect(poseStack, winX + 8, tabY, 3, 24, 2, accent);
+                tabAnim.setTarget(1);
             } else if (hovered) {
-                RenderUtils.drawRoundedRect(poseStack, winX + 8, tabY, sideW - 16, 24, 8, 0x33334155);
+                tabAnim.setTarget(0.5f);
+            } else {
+                tabAnim.setTarget(0);
+            }
+            float tabProgress = tabAnim.get();
+
+            if (tabProgress > 0.01f) {
+                int bgAlpha = (int) (0xEE * tabProgress);
+                int bgColor = (bgAlpha << 24) | (0x1E1B4B & 0x00FFFFFF);
+                RenderUtils.drawRoundedBorderedRect(poseStack, winX + 8, tabY, sideW - 16, 24, 8, 1, bgColor, accent);
+                RenderUtils.drawRoundedRect(poseStack, winX + 8, tabY, 3, 24, 2, accent);
             }
 
             int textCol = active ? 0xFFFFFFFF : (hovered ? 0xFFE2E8F0 : 0xFF94A3B8);
@@ -233,6 +254,14 @@ public class ShadcnGuiScreen extends Screen {
             int cardBg = m.isEnabled() ? 0xEE111827 : 0xEE0B0F19;
             int borderCol = m.isEnabled() ? accent : (cardHover ? 0xFF64748B : 0xFF223348);
 
+            Animation hoverAnim = moduleAnims.computeIfAbsent(m, k -> new Animation(0, 0.15f));
+            if (cardHover) {
+                hoverAnim.setTarget(1);
+            } else {
+                hoverAnim.setTarget(0);
+            }
+            float hoverProgress = hoverAnim.get();
+
             RenderUtils.drawRoundedBorderedRect(poseStack, cardX, cardY, colW, cardH, 10, 1, cardBg, borderCol);
 
             if (m.isEnabled()) {
@@ -264,6 +293,10 @@ public class ShadcnGuiScreen extends Screen {
             font.drawShadow(poseStack, desc, cardX + 12, cardY + 26, 0xFF64748B);
 
             if (expanded) {
+                Animation expandAnim = expandAnims.computeIfAbsent(m, k -> new Animation(0, 0.12f));
+                expandAnim.setTarget(1);
+                float expandProgress = expandAnim.get();
+
                 int sY = cardY + 40;
                 for (Setting<?> setting : m.getSettings()) {
                     renderSetting(poseStack, setting, cardX + 12, sY, colW - 24, mouseX, mouseY, accent);
@@ -276,6 +309,9 @@ public class ShadcnGuiScreen extends Screen {
                     RenderUtils.drawRoundedBorderedRect(poseStack, cardX + 12, sY + 2, btnW, btnH, 8, 1, btnHover ? 0xDD1E1B4B : 0xAA0F172A, btnHover ? accent : 0xFF334155);
                     font.drawShadow(poseStack, "Нарисовать прицел", cardX + 12 + (btnW - font.width("Нарисовать прицел")) / 2.0f, sY + 6, btnHover ? 0xFFFFFFFF : 0xFFCBD5E1);
                 }
+            } else {
+                Animation expandAnim = expandAnims.computeIfAbsent(m, k -> new Animation(0, 0.12f));
+                expandAnim.setTarget(0);
             }
 
             if (isCol1) row1Y += cardH + 10;
@@ -583,7 +619,7 @@ public class ShadcnGuiScreen extends Screen {
             }
 
             int partY = gridY + 160;
-            for (mouseX >= contentX + 12 && mouseX <= contentX + contentW - 12 && mouseY >= partY && mouseY <= partY + 34) {
+            if (mouseX >= contentX + 12 && mouseX <= contentX + contentW - 12 && mouseY >= partY && mouseY <= partY + 34) {
                 ThemeManager.INSTANCE.setParticles(!ThemeManager.INSTANCE.isParticles());
                 return true;
             }
@@ -593,7 +629,7 @@ public class ShadcnGuiScreen extends Screen {
             int inputY = nickY + 32;
             int inputW = contentW - 124;
 
-            for (mouseX >= inputX && mouseX <= inputX + inputW && mouseY >= inputY && mouseY <= inputY + 22) {
+            if (mouseX >= inputX && mouseX <= inputX + inputW && mouseY >= inputY && mouseY <= inputY + 22) {
                 editingNick = true;
                 return true;
             } else {
@@ -601,13 +637,13 @@ public class ShadcnGuiScreen extends Screen {
             }
 
             int btnX = inputX + inputW + 10;
-            for (mouseX >= btnX && mouseX <= btnX + 66 && mouseY >= inputY && mouseY <= inputY + 22) {
+            if (mouseX >= btnX && mouseX <= btnX + 66 && mouseY >= inputY && mouseY <= inputY + 22) {
                 CosmeticManager.INSTANCE.setSystemNick(nickInput);
                 return true;
             }
 
             int capeY = nickY + 76;
-            for (mouseX >= contentX + 12 && mouseX <= contentX + contentW - 12 && mouseY >= capeY && mouseY <= capeY + 46) {
+            if (mouseX >= contentX + 12 && mouseX <= contentX + contentW - 12 && mouseY >= capeY && mouseY <= capeY + 46) {
                 CosmeticManager.INSTANCE.setCapeEnabled(!CosmeticManager.INSTANCE.isCapeEnabled());
                 return true;
             }

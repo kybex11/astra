@@ -61,6 +61,16 @@ public class WaypointManager {
     public static void ensureLoaded() {
         if (loaded) return;
         loaded = true;
+
+        // Try SQLite first
+        try {
+            List<Waypoint> dbList = astra.mod.client.storage.AstraDatabase.INSTANCE.loadWaypoints();
+            if (dbList != null && !dbList.isEmpty()) {
+                WAYPOINTS.addAll(dbList);
+                return;
+            }
+        } catch (Exception ignored) {}
+
         File file = getFile();
         if (!file.exists()) return;
         try (FileReader reader = new FileReader(file)) {
@@ -79,6 +89,8 @@ public class WaypointManager {
                     ));
                 } catch (Exception ignored) {}
             }
+            // Migrate to SQLite
+            astra.mod.client.storage.AstraDatabase.INSTANCE.saveWaypoints(WAYPOINTS);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -86,6 +98,9 @@ public class WaypointManager {
 
     public static void save() {
         try {
+            // Save to SQLite3
+            astra.mod.client.storage.AstraDatabase.INSTANCE.saveWaypoints(WAYPOINTS);
+
             JsonObject root = new JsonObject();
             JsonArray arr = new JsonArray();
             for (Waypoint wp : WAYPOINTS) {

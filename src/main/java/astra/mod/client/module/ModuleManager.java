@@ -52,6 +52,7 @@ public class ModuleManager {
         register(new Sprint());
         register(new ToggleSprint());
         register(new ToggleSneak());
+        register(new astra.mod.client.module.impl.movement.InstantSneak());
         register(new Snaplook());
         register(FastClimb.INSTANCE);
         register(astra.mod.client.module.impl.movement.AntiSwimming.INSTANCE);
