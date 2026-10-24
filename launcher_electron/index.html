@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Astra Launcher</title>
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --bg-card: rgba(15, 23, 42, 0.72);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(168, 85, 247, 0.35);
+      --accent-purple: #A855F7;
+      --accent-violet: #7C3AED;
+      --accent-cyan: #06B6D4;
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --accent-rose: #F43F5E;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Background Star Canvas */
+    #stars-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Custom Title Bar */
+    .titlebar {
+      height: 42px;
+      background: rgba(10, 14, 26, 0.95);
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 10;
+    }
+
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    .brand-icon {
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+      font-size: 13px;
+      color: #FFF;
+    }
+
+    .titlebar-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(6, 182, 212, 0.25);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .titlebar-controls {
+      display: flex;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+
+    .titlebar-btn {
+      width: 32px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .titlebar-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFF;
+    }
+
+    .titlebar-btn.close:hover {
+      background: var(--accent-rose);
+      color: #FFF;
+    }
+
+    /* Main Container */
+    .app-body {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 42px);
+      z-index: 1;
+      position: relative;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 210px;
+      background: rgba(11, 16, 30, 0.85);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+      gap: 6px;
+    }
+
+    .nav-category {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 8px 12px 4px 12px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      transform: translateX(3px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(6, 182, 212, 0.15) 100%);
+      color: #FFF;
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      height: 60%;
+      width: 3px;
+      background: linear-gradient(to bottom, var(--accent-purple), var(--accent-cyan));
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 0 10px var(--accent-purple);
+    }
+
+    .nav-item-icon {
+      font-size: 16px;
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: radial-gradient(circle at 85% 15%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+                  radial-gradient(circle at 15% 85%, rgba(6, 182, 212, 0.08) 0%, transparent 45%);
+    }
+
+    .tab-content {
+      flex: 1;
+      padding: 24px 28px;
+      overflow-y: auto;
+    }
+
+    /* Scrollbar styling */
+    .tab-content::-webkit-scrollbar,
+    .console-logs::-webkit-scrollbar {
+      width: 6px;
+    }
+    .tab-content::-webkit-scrollbar-track,
+    .console-logs::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .tab-content::-webkit-scrollbar-thumb,
+    .console-logs::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+    }
+    .tab-content::-webkit-scrollbar-thumb:hover,
+    .console-logs::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-purple);
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(24, 32, 54, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border-radius: 16px;
+      padding: 24px 28px;
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, rgba(6, 182, 212, 0.1) 40%, transparent 70%);
+      pointer-events: none;
+      filter: blur(30px);
+    }
+
+    .hero-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .hero-title {
+      font-size: 26px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #FFF 30%, #C084FC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-version-badge {
+      background: rgba(168, 85, 247, 0.2);
+      color: #C084FC;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      max-width: 580px;
+    }
+
+    .feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .tag {
+      background: rgba(124, 58, 237, 0.15);
+      color: #E2E8F0;
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tag:hover {
+      background: rgba(124, 58, 237, 0.25);
+      border-color: var(--accent-purple);
+      transform: translateY(-1px);
+    }
+
+    .tag-cyan {
+      background: rgba(6, 182, 212, 0.15);
+      color: #E2E8F0;
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+    .tag-emerald {
+      background: rgba(16, 185, 129, 0.15);
+      color: #E2E8F0;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    /* Grids & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .key-badge {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(6, 182, 212, 0.2));
+      border: 1px solid var(--border-glow);
+      color: #F8FAFC;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 3D Cosmetic Preview Cards */
+    .cosmetic-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+
+    .cosmetic-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(124, 58, 237, 0.15);
+    }
+
+    .cosmetic-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .cosmetic-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(6, 182, 212, 0.25));
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Filter Bar for Modules */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFF;
+    }
+
+    .filter-btn.active {
+      background: var(--accent-purple);
+      color: #FFF;
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+    }
+
+    .search-input {
+      margin-left: auto;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #FFF;
+      outline: none;
+      width: 180px;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+      width: 220px;
+    }
+
+    /* Console / Logs view */
+    .console-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 12px;
+    }
+
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .console-logs {
+      flex: 1;
+      background: #05070D;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11px;
+      color: #A7F3D0;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      user-select: text;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+      line-height: 1.5;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #FFF;
+    }
+
+    /* Bottom Play Bar */
+    .playbar {
+      height: 78px;
+      background: rgba(10, 14, 26, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      z-index: 10;
+    }
+
+    .profile-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+    }
+
+    .avatar-box {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+    }
+
+    .avatar-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      image-rendering: pixelated;
+    }
+
+    .avatar-badge-online {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      border: 2px solid #0B0F19;
+      box-shadow: 0 0 6px var(--accent-emerald);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .nick-input {
+      background: rgba(24, 32, 54, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 7px 12px;
+      color: #F1F5F9;
+      font-size: 13px;
+      font-weight: 700;
+      outline: none;
+      width: 160px;
+      transition: all 0.2s;
+    }
+
+    .nick-input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
+
+    .ram-select {
+      background: rgba(24, 32, 54, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 7px 12px;
+      color: #F1F5F9;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ram-select:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .play-btn-wrapper {
+      position: relative;
+    }
+
+    .play-btn {
+      position: relative;
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: #FFF;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 40px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .play-btn::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.55);
+    }
+
+    .play-btn:hover::before {
+      opacity: 1;
+    }
+
+    .play-btn:active {
+      transform: translateY(0);
+    }
+
+    .play-btn:disabled {
+      background: #334155;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+      opacity: 0.7;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFF;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-badge {
+      font-size: 12px;
+      color: var(--accent-emerald);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 260px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-badge.error {
+      color: var(--accent-rose);
+    }
+
+    /* Range slider for RAM in settings */
+    .slider-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 5px;
+      background: #1E293B;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-purple);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-purple);
+      transition: 0.2s;
+    }
+
+    .slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+  </style>
+  <script src="vue.js"></script>
+</head>
+<body>
+  <!-- Starfield Canvas -->
+  <canvas id="stars-canvas"></canvas>
+
+  <div id="app">
+    <!-- Custom Titlebar -->
+    <div class="titlebar">
+      <div class="titlebar-brand">
+        <div class="brand-icon">✦</div>
+        <span>ASTRA LAUNCHER</span>
+        <div class="titlebar-status">
+          <span class="status-dot"></span>
+          <span>DISCORD RPC ACTIVE</span>
+        </div>
+      </div>
+      <div class="titlebar-controls">
+        <div class="titlebar-btn" @click="minimizeWindow" title="Свернуть">─</div>
+        <div class="titlebar-btn close" @click="closeWindow" title="Закрыть">✕</div>
+      </div>
+    </div>
+
+    <!-- Main App Body -->
+    <div class="app-body">
+      <!-- Navigation Sidebar -->
+      <div class="sidebar">
+        <div class="nav-category">Клиент</div>
+        <div class="nav-item" :class="{ active: currentTab === 'play' }" @click="currentTab = 'play'">
+          <span class="nav-item-icon">🚀</span>
+          <span>Играть</span>
+        </div>
+        <div class="nav-item" :class="{ active: currentTab === 'cosmetics' }" @click="currentTab = 'cosmetics'">
+          <span class="nav-item-icon">👑</span>
+          <span>3D Косметика</span>
+        </div>
+        <div class="nav-item" :class="{ active: currentTab === 'mods' }" @click="currentTab = 'mods'">
+          <span class="nav-item-icon">🛡️</span>
+          <span>Модули & PvP</span>
+        </div>
+
+        <div class="nav-category" style="margin-top: 10px;">Система</div>
+        <div class="nav-item" :class="{ active: currentTab === 'settings' }" @click="currentTab = 'settings'">
+          <span class="nav-item-icon">⚙️</span>
+          <span>Настройки</span>
+        </div>
+        <div class="nav-item" :class="{ active: currentTab === 'logs' }" @click="currentTab = 'logs'">
+          <span class="nav-item-icon">📟</span>
+          <span>Консоль / Логи</span>
+        </div>
+
+        <div class="sidebar-footer">
+          <div style="font-weight: 700; color: #E2E8F0;">Astra Client v1.1.0</div>
+          <div>Minecraft 1.16.5 (Fabric)</div>
+          <div>Ultralight CEF + SQLite3</div>
+        </div>
+      </div>
+
+      <!-- Main Content View -->
+      <div class="content-area">
+        <!-- TAB 1: PLAY -->
+        <div class="tab-content" v-if="currentTab === 'play'">
+          <div class="hero-banner">
+            <div class="hero-title-row">
+              <h2 class="hero-title">★ ASTRA CLIENT 1.16.5</h2>
+              <span class="hero-version-badge">v1.1.0 PRO</span>
+            </div>
+            <p class="hero-subtitle">
+              Клиент нового поколения на Fabric 1.16.5. Оснащен воксельным 3D движком косметики, современным Web ClickGUI на базе Ultralight, локальной базой SQLite3 и передовыми PvP алгоритмами.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">🧊 3D Voxel Dragon Wings & Halo</span>
+              <span class="tag tag-cyan">🌐 Web GUI (Ultralight CEF)</span>
+              <span class="tag tag-emerald">🗄️ SQLite3 База данных</span>
+              <span class="tag">🎯 Bow Prediction & Fast Snap</span>
+              <span class="tag tag-cyan">🗺️ Топографическая Миникарта</span>
+              <span class="tag tag-emerald">⚡ Instant Sneak (Резкий шифт)</span>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">🎮 Горячие клавиши в игре</span>
+                <span class="key-badge">Управление</span>
+              </div>
+              <div class="card-desc" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Главное Web GUI меню:</span>
+                  <span class="key-badge">RIGHT SHIFT</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Редактор HUD & интерфейса:</span>
+                  <span class="key-badge">RIGHT ALT</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Поставить Waypoint на миникарте:</span>
+                  <span class="key-badge">B</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Большая топографическая карта:</span>
+                  <span class="key-badge">M</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">✨ Особенности релиза</span>
+                <span class="key-badge" style="color: #34D399; border-color: rgba(16, 185, 129, 0.4);">НОВОЕ</span>
+              </div>
+              <div class="card-desc" style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+                <div>• <b>Пометка "Astra Client"</b> в Tab-листе игроков как в Lunar</div>
+                <div>• <b>Объемная 3D косметика:</b> настоящие Minecraft-воксели с тенями</div>
+                <div>• <b>Резкий / Плавный Sneak:</b> настройка анимации приседаний</div>
+                <div>• <b>Интеллектуальный AimAssist:</b> мгновенная наводка и баллистика лука</div>
+                <div>• <b>JumpCircles & TargetESP:</b> 3D кольца прыжка и аура таргета</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: COSMETICS -->
+        <div class="tab-content" v-if="currentTab === 'cosmetics'">
+          <div style="margin-bottom: 18px;">
+            <h3 style="font-size: 18px; font-weight: 800;">👑 3D Воксельная Косметика</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Полноценные объемные 3D модели в аутентичном кубическом стиле Minecraft с физическим освещением граней.
+            </p>
+          </div>
+
+          <div class="grid-3">
+            <div class="cosmetic-card">
+              <span class="cosmetic-badge">АКТИВНО</span>
+              <div class="cosmetic-icon">🐲</div>
+              <div style="font-weight: 700; font-size: 14px;">3D Dragon Wings</div>
+              <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                Объемные воксельные крылья дракона с костями, когтями и динамической анимацией взмахов.
+              </div>
+              <div class="tag" style="margin-top: auto; justify-content: center;">Кубический воксель</div>
+            </div>
+
+            <div class="cosmetic-card">
+              <span class="cosmetic-badge">АКТИВНО</span>
+              <div class="cosmetic-icon">😇</div>
+              <div style="font-weight: 700; font-size: 14px;">Floating Golden Halo</div>
+              <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                Парящий золотой нимб из 8 сегментов с вращением и мягким волновым парением над головой.
+              </div>
+              <div class="tag tag-cyan" style="margin-top: auto; justify-content: center;">Золотой воксель</div>
+            </div>
+
+            <div class="cosmetic-card">
+              <span class="cosmetic-badge">АКТИВНО</span>
+              <div class="cosmetic-icon">😈</div>
+              <div style="font-weight: 700; font-size: 14px;">3D Demon Horns</div>
+              <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                Изогнутые рога демона с градиентом черного и алого цвета, закрепленные на голове игрока.
+              </div>
+              <div class="tag tag-emerald" style="margin-top: auto; justify-content: center;">Рубиновый воксель</div>
+            </div>
+
+            <div class="cosmetic-card">
+              <span class="cosmetic-badge">АКТИВНО</span>
+              <div class="cosmetic-icon">🦹</div>
+              <div style="font-weight: 700; font-size: 14px;">Astra Animated Cape</div>
+              <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                Фирменный плащ Astra с физикой колебаний при беге, прыжках и полете.
+              </div>
+              <div class="tag" style="margin-top: auto; justify-content: center;">HD Физика плаща</div>
+            </div>
+
+            <div class="cosmetic-card">
+              <span class="cosmetic-badge">АКТИВНО</span>
+              <div class="cosmetic-icon">🪐</div>
+              <div style="font-weight: 700; font-size: 14px;">Astral Band (Tab Badge)</div>
+              <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                Эксклюзивная фиолетовая иконка клиента в Tab-листе — видно всех игроков Astra Client.
+              </div>
+              <div class="tag tag-cyan" style="margin-top: auto; justify-content: center;">Lunar-style Tab</div>
+            </div>
+
+            <div class="cosmetic-card">
+              <span class="cosmetic-badge">АКТИВНО</span>
+              <div class="cosmetic-icon">✨</div>
+              <div style="font-weight: 700; font-size: 14px;">3D JumpCircles</div>
+              <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                Неоновые расходящиеся волновые кольца на земле при каждом прыжке с мягким затуханием.
+              </div>
+              <div class="tag tag-emerald" style="margin-top: auto; justify-content: center;">Неоновый шейдер</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: MODS -->
+        <div class="tab-content" v-if="currentTab === 'mods'">
+          <div class="filter-bar">
+            <button class="filter-btn" :class="{ active: selectedCategory === 'all' }" @click="selectedCategory = 'all'">Все ({{ modules.length }})</button>
+            <button class="filter-btn" :class="{ active: selectedCategory === 'Combat' }" @click="selectedCategory = 'Combat'">⚔️ Combat</button>
+            <button class="filter-btn" :class="{ active: selectedCategory === 'Render' }" @click="selectedCategory = 'Render'">👁️ Visuals</button>
+            <button class="filter-btn" :class="{ active: selectedCategory === 'Movement' }" @click="selectedCategory = 'Movement'">⚡ Movement</button>
+            <button class="filter-btn" :class="{ active: selectedCategory === 'Player' }" @click="selectedCategory = 'Player'">👤 Player</button>
+            <input type="text" class="search-input" v-model="searchQuery" placeholder="🔍 Поиск модуля...">
+          </div>
+
+          <div class="grid-2">
+            <div class="card" v-for="mod in filteredModules" :key="mod.name">
+              <div class="card-header">
+                <span class="card-title">{{ mod.name }}</span>
+                <span class="tag" :class="{ 'tag-cyan': mod.cat === 'Render', 'tag-emerald': mod.cat === 'Combat' }">{{ mod.cat }}</span>
+              </div>
+              <p class="card-desc">{{ mod.desc }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: SETTINGS -->
+        <div class="tab-content" v-if="currentTab === 'settings'">
+          <div style="margin-bottom: 18px;">
+            <h3 style="font-size: 18px; font-weight: 800;">⚙️ Настройки и параметры запуска</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Управление памятью, путями Java и системными папками клиента.
+            </p>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Выделение оперативной памяти (RAM)</span>
+                <span class="key-badge">{{ ram }} GB</span>
+              </div>
+              <div class="slider-container" style="margin-top: 14px;">
+                <input type="range" min="2" max="12" step="1" v-model="ram" class="slider" @change="saveNick">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim);">
+                  <span>2 GB (Мин)</span>
+                  <span>4 GB (Базовый)</span>
+                  <span>8 GB (PvP Режим)</span>
+                  <span>12 GB (Ультра)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Окружение Java & Среда</span>
+                <span class="key-badge" style="color: #34D399; border-color: rgba(16, 185, 129, 0.4);">Java 17</span>
+              </div>
+              <p class="card-desc" style="margin-top: 8px;">
+                Для запуска Minecraft 1.16.5 с Fabric и миксинами используется Eclipse Temurin / Adoptium JDK 17 с оптимизацией G1GC.
+              </p>
+              <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="action-btn" @click="openFolder('mods')">📁 Папка Mods</button>
+                <button class="action-btn" @click="openFolder('logs')">📄 Папка Logs</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Локальная база данных SQLite3</span>
+                <span class="key-badge">ВКЛЮЧЕНО</span>
+              </div>
+              <p class="card-desc" style="margin-top: 8px;">
+                Все метки Waypoints, пресеты HUD, конфиги модулей и профили сохраняются в сверхбыструю локальную реляционную БД <code>astra_storage.db</code>.
+              </p>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Web UI Движок (Ultralight)</span>
+                <span class="key-badge">CEF / Ultralight</span>
+              </div>
+              <p class="card-desc" style="margin-top: 8px;">
+                Рендеринг интерфейса ClickGUI с аппаратным ускорением HTML5/CSS3. Клавиша вызова в игре: <b>Правый Shift</b>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: LOGS / CONSOLE -->
+        <div class="tab-content" v-if="currentTab === 'logs'">
+          <div class="console-container">
+            <div class="console-header">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 800;">📟 Консоль запуска игры</h3>
+                <span style="font-size: 11px; color: var(--text-dim);">Прямой поток stdout & stderr процесса</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="action-btn" @click="clearLogs">Очистить</button>
+                <button class="action-btn" @click="copyLogs">Скопировать лог</button>
+              </div>
+            </div>
+            <div class="console-logs" ref="logContainer">{{ logs || 'Логи появятся после нажатия кнопки "ИГРАТЬ"...' }}</div>
+          </div>
+        </div>
+
+        <!-- Bottom Play Bar -->
+        <div class="playbar">
+          <div class="profile-card">
+            <div class="avatar-wrapper">
+              <div class="avatar-box">
+                <img :src="avatarUrl" @error="handleAvatarError" alt="Avatar">
+              </div>
+              <span class="avatar-badge-online"></span>
+            </div>
+
+            <div class="input-group">
+              <span class="input-label">Никнейм игрока</span>
+              <input type="text" v-model="username" @input="saveNick" class="nick-input" placeholder="Никнейм" maxlength="16">
+            </div>
+
+            <div class="input-group" style="margin-left: 10px;">
+              <span class="input-label">RAM (GB)</span>
+              <select v-model="ram" @change="saveNick" class="ram-select">
+                <option value="2">2 GB</option>
+                <option value="4">4 GB (Стандарт)</option>
+                <option value="6">6 GB</option>
+                <option value="8">8 GB (PvP Реком.)</option>
+                <option value="12">12 GB</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 18px;">
+            <div class="status-badge" :class="{ error: isErrorStatus }">
+              <span>{{ statusMessage }}</span>
+            </div>
+
+            <div class="play-btn-wrapper">
+              <button class="play-btn" :disabled="isLaunching" @click="launchGame">
+                <div class="spinner" v-if="isLaunching"></div>
+                <span v-else>▶</span>
+                <span>{{ isLaunching ? 'ЗАПУСК...' : 'ИГРАТЬ' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    // Animated Starfield Canvas
+    (function initStars() {
+      const canvas = document.getElementById('stars-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let w = canvas.width = window.innerWidth;
+      let h = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      });
+
+      const stars = [];
+      for (let i = 0; i < 90; i++) {
+        stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          radius: Math.random() * 1.5 + 0.3,
+          alpha: Math.random(),
+          speed: Math.random() * 0.015 + 0.005,
+          color: Math.random() > 0.6 ? '#A855F7' : (Math.random() > 0.5 ? '#06B6D4' : '#FFFFFF')
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, w, h);
+        for (const s of stars) {
+          s.alpha += s.speed;
+          if (s.alpha > 1 || s.alpha < 0) s.speed = -s.speed;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = Math.max(0.1, Math.min(1, s.alpha));
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+        requestAnimationFrame(render);
+      }
+      render();
+    })();
+
+    const app = Vue.createApp({
+      data() {
+        return {
+          currentTab: 'play',
+          selectedCategory: 'all',
+          searchQuery: '',
+          username: localStorage.getItem('astra_username') || 'AstraPlayer',
+          ram: localStorage.getItem('astra_ram') || '4',
+          isLaunching: false,
+          statusMessage: '● Готов к запуску',
+          isErrorStatus: false,
+          logs: '',
+          modules: [
+            { name: 'KillAura', desc: 'Автоматическая атака врагов с плавным таргетингом и ротацией', cat: 'Combat' },
+            { name: 'BowAimAssist', desc: 'Расчет баллистики полета стрел и мгновенная наводка на цели', cat: 'Combat' },
+            { name: 'Velocity', desc: 'Умная компенсация отдачи (Anti-KB) под античиты', cat: 'Combat' },
+            { name: 'Reach', desc: 'Расширенная дистанция нанесения ударов и взаимодействия', cat: 'Combat' },
+            { name: 'HitBoxes', desc: 'Увеличение хитбоксов вражеских сущностей', cat: 'Combat' },
+            { name: 'AutoTotem', desc: 'Молниеносная замена тотема бессмертия во вторую руку', cat: 'Player' },
+            { name: 'InstantSneak', desc: 'Резкий или сглаженный шифт без задержек камеры', cat: 'Player' },
+            { name: 'FastPlace', desc: 'Строительство без задержки кликов правой кнопки мыши', cat: 'Player' },
+            { name: '3D Voxel ESP', desc: 'Объемные боксы игроков, индикатор здоровья и дистанции', cat: 'Render' },
+            { name: 'MiniMap & Waypoints', desc: 'Топографический радар с высотами блоков и метками', cat: 'Render' },
+            { name: 'WorldMap', desc: 'Полноэкранная карта мира с зумом и координатами', cat: 'Render' },
+            { name: 'JumpCircles', desc: 'Эффектные неоновые кольца на земле при прыжках', cat: 'Render' },
+            { name: 'TargetESP', desc: 'Световой ореол вокруг атакуемой сущности', cat: 'Render' },
+            { name: 'Tracers', desc: 'Линии от прицела к видимым вражеским игрокам', cat: 'Render' },
+            { name: 'XRay', desc: 'Подсветка ценных руд в шахтах с фильтрацией блоков', cat: 'Render' },
+            { name: 'Sprint', desc: 'Постоянный бег без повторного нажатия клавиши W', cat: 'Movement' },
+            { name: 'NoFall', desc: 'Предотвращение урона при падении с высоты', cat: 'Movement' },
+            { name: 'Speed', desc: 'Ускорение передвижения персонажа в прыжке', cat: 'Movement' },
+            { name: 'FastBreak', desc: 'Увеличение скорости разрушения блоков', cat: 'Player' },
+            { name: 'ChestStealer', desc: 'Мгновенное автоматическое опустошение сундуков', cat: 'Player' }
+          ]
+        };
+      },
+      computed: {
+        avatarUrl() {
+          const clean = encodeURIComponent((this.username || 'AstraPlayer').trim());
+          return `https://minotar.net/helm/${clean}/64.png`;
+        },
+        filteredModules() {
+          return this.modules.filter(m => {
+            const matchCat = this.selectedCategory === 'all' || m.cat === this.selectedCategory;
+            const matchSearch = !this.searchQuery || 
+              m.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+              m.desc.toLowerCase().includes(this.searchQuery.toLowerCase());
+            return matchCat && matchSearch;
+          });
+        }
+      },
+      methods: {
+        handleAvatarError(e) {
+          e.target.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><rect width='64' height='64' fill='%237C3AED'/><text x='32' y='42' font-size='32' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'>★</text></svg>";
+        },
+        saveNick() {
+          localStorage.setItem('astra_username', this.username);
+          localStorage.setItem('astra_ram', this.ram);
+        },
+        minimizeWindow() {
+          ipcRenderer.send('window-min');
+        },
+        closeWindow() {
+          ipcRenderer.send('window-close');
+        },
+        openFolder(type) {
+          ipcRenderer.send('open-folder', type);
+        },
+        clearLogs() {
+          this.logs = '';
+        },
+        copyLogs() {
+          if (navigator.clipboard && this.logs) {
+            navigator.clipboard.writeText(this.logs);
+            this.statusMessage = '✓ Лог скопирован в буфер';
+          }
+        },
+        launchGame() {
+          this.saveNick();
+          this.isLaunching = true;
+          this.isErrorStatus = false;
+          this.statusMessage = '⏳ Запуск Minecraft...';
+
+          ipcRenderer.send('launch-game', {
+            username: this.username,
+            ram: parseInt(this.ram)
+          });
+        }
+      },
+      mounted() {
+        ipcRenderer.on('launch-status', (event, res) => {
+          const msg = (res && res.message) || '';
+          const starting = msg.indexOf('запускается') !== -1 || msg.indexOf('ЗАПУСК') !== -1;
+          this.isLaunching = !!starting && !!res.success;
+          this.isErrorStatus = !res.success;
+          this.statusMessage = (res.success ? '✓ ' : '✕ ') + msg;
+        });
+
+        ipcRenderer.on('launch-log', (event, text) => {
+          this.logs += text;
+          if (this.$refs.logContainer) {
+            this.$nextTick(() => {
+              this.$refs.logContainer.scrollTop = this.$refs.logContainer.scrollHeight;
+            });
+          }
+        });
+      }
+    });
+
+    app.mount('#app');
+  </script>
+</body>
+</html>

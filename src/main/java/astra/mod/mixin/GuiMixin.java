@@ -14,4 +14,12 @@ public class GuiMixin {
     private void onRender(PoseStack poseStack, float tickDelta, CallbackInfo ci) {
         HudRenderer.INSTANCE.render(poseStack, tickDelta);
     }
+
+    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
+    private void onRenderCrosshair(PoseStack poseStack, CallbackInfo ci) {
+        if (astra.mod.client.module.impl.render.CustomCrosshair.INSTANCE != null && astra.mod.client.module.impl.render.CustomCrosshair.INSTANCE.isEnabled()) {
+            astra.mod.client.module.impl.render.CustomCrosshair.INSTANCE.render(poseStack);
+            ci.cancel();
+        }
+    }
 }

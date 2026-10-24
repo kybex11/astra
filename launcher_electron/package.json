@@ -1,0 +1,33 @@
+{
+  "name": "astra-launcher",
+  "version": "1.1.0",
+  "description": "Astra Launcher for Minecraft 1.16.5",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:exe": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.astra.launcher",
+    "productName": "Astra Launcher",
+    "win": {
+      "target": "portable"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "../installer/astra-1.1.0.jar",
+        "to": "astra-1.1.0.jar"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^41.7.1",
+    "electron-builder": "^26.7.0"
+  },
+  "dependencies": {
+    "vue": "^3.5.29"
+  }
+}

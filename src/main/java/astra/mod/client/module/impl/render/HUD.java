@@ -9,7 +9,7 @@ public class HUD extends Module {
     public final BooleanSetting arrayList = new BooleanSetting("ArrayList", "Список активных модулей", true);
 
     public HUD() {
-        super("HUD", "Отображение графических элементов интерфейса на экране", Category.RENDER);
+        super("HUD", "Отображение графических элементов интерфейса на экране", Category.HUD);
         addSettings(watermark, arrayList);
         setEnabled(true);
     }

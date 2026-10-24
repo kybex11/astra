@@ -38,3 +38,15 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# external
+
+*/node_modules/*
+*/dist/*
+AstraLauncher/
+launcher_electron/dist/
+launcher_electron/runtime/
+*.zip
+!src/main/resources/resourcepacks/*.zip
+*.exe
+installer/*.exe

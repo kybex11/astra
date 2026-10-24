@@ -4,11 +4,32 @@ plugins {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	mavenCentral()
+}
+
+loom {
+	runs {
+		client {
+			if (project.hasProperty('username')) {
+				programArgs "--username", "${project.property('username')}"
+			}
+		}
+	}
+}
+
+// RAM и Java для игры, передаются лаунчером:
+//   gradlew runClient -Pusername=Nick -PmcRam=4 -PmcJava="C:\...\bin\java.exe"
+// -PmcRam ignored when absent (loom defaults are kept).
+// -PmcJava must point to a java executable (JDK 17 recommended for MC 1.16.5).
+def mcRamProp = project.hasProperty('mcRam') ? project.property('mcRam').toString().trim() : null
+def mcJavaProp = project.hasProperty('mcJava') ? project.property('mcJava').toString().trim() : null
+tasks.matching { it.name == 'runClient' }.configureEach {
+	if (mcRamProp != null && mcRamProp != '' && mcRamProp.isInteger() && mcRamProp.toInteger() > 0) {
+		it.jvmArgs("-Xmx${mcRamProp}G", '-Xms1G')
+	}
+	if (mcJavaProp != null && mcJavaProp != '' && new File(mcJavaProp).exists()) {
+		it.executable(mcJavaProp)
+	}
 }
 
 dependencies {
@@ -19,6 +40,10 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// SQLite3 local storage
+	implementation "org.xerial:sqlite-jdbc:3.45.1.0"
+	include "org.xerial:sqlite-jdbc:3.45.1.0"
 }
 
 processResources {

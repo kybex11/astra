@@ -3,6 +3,7 @@ package astra.mod.client.ui.clickgui;
 import astra.mod.client.Category;
 import astra.mod.client.module.Module;
 import astra.mod.client.module.ModuleManager;
+import astra.mod.client.theme.ThemeManager;
 import astra.mod.client.util.RenderUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -44,8 +45,11 @@ public class Panel {
             this.y = mouseY - dragY;
         }
 
+        int accent = ThemeManager.INSTANCE.getAccent();
+        int accentDark = ThemeManager.INSTANCE.getAccentDark();
+
         // Panel header gradient
-        RenderUtils.drawGradientH(poseStack, x, y, width, headerHeight, 0xFF4338CA, 0xFF6366F1);
+        RenderUtils.drawGradientH(poseStack, x, y, width, headerHeight, accentDark, accent);
 
         // Header bottom subtle line
         RenderUtils.drawRect(poseStack, x, y + headerHeight - 1, width, 1, 0x55FFFFFF);
@@ -70,7 +74,7 @@ public class Panel {
         }
 
         // Subtle glowing border around panel
-        RenderUtils.drawBorder(poseStack, x, y, width, totalHeight, 1, 0x446366F1);
+        RenderUtils.drawBorder(poseStack, x, y, width, totalHeight, 1, 0x44000000 | (accent & 0x00FFFFFF));
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
