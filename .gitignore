@@ -48,3 +48,5 @@ launcher_electron/dist/
 launcher_electron/runtime/
 *.zip
 !src/main/resources/resourcepacks/*.zip
+*.exe
+installer/*.exe

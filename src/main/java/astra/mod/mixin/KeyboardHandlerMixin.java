@@ -19,10 +19,16 @@ public class KeyboardHandlerMixin {
             Minecraft mc = Minecraft.getInstance();
             if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
                 if (mc.screen == null) {
-                    mc.setScreen(ClickGuiScreen.INSTANCE);
+                    if (astra.mod.client.module.impl.render.ClickGuiModule.INSTANCE != null) {
+                        astra.mod.client.module.impl.render.ClickGuiModule.INSTANCE.openGui();
+                    } else {
+                        mc.setScreen(astra.mod.client.web.WebGuiScreen.INSTANCE);
+                    }
                     ci.cancel();
                     return;
-                } else if (mc.screen instanceof ClickGuiScreen) {
+                } else if (mc.screen instanceof astra.mod.client.web.WebGuiScreen
+                        || mc.screen instanceof astra.mod.client.ui.shadcn.ShadcnGuiScreen
+                        || mc.screen instanceof ClickGuiScreen) {
                     mc.screen.onClose();
                     ci.cancel();
                     return;

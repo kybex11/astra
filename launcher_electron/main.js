@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const net = require('net');
 const { spawn, execFileSync } = require('child_process');
@@ -203,6 +203,24 @@ ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close();
 });
 
+ipcMain.on('open-folder', (event, type) => {
+  try {
+    if (type === 'mods') {
+      const p = path.join(process.env.APPDATA || '', '.minecraft', 'mods');
+      if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+      shell.openPath(p);
+    } else if (type === 'logs') {
+      const p = path.join(getProjectRoot(), 'run', 'logs');
+      if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+      shell.openPath(p);
+    } else if (type === 'root') {
+      shell.openPath(getProjectRoot());
+    }
+  } catch (err) {
+    console.error('Failed to open folder:', err);
+  }
+});
+
 function sendStatus(msg) {
   try {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('launch-status', msg);
@@ -321,8 +339,16 @@ ipcMain.on('launch-game', (event, { username, ram }) => {
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
-    gameProcess.stdout.on('data', (d) => { try { logStream.write(d); } catch (e) {} pushTail(d); });
-    gameProcess.stderr.on('data', (d) => { try { logStream.write(d); } catch (e) {} pushTail(d); });
+    gameProcess.stdout.on('data', (d) => {
+      try { logStream.write(d); } catch (e) {}
+      pushTail(d);
+      try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('launch-log', d.toString()); } catch (e) {}
+    });
+    gameProcess.stderr.on('data', (d) => {
+      try { logStream.write(d); } catch (e) {}
+      pushTail(d);
+      try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('launch-log', d.toString()); } catch (e) {}
+    });
 
     gameProcess.on('error', (err) => {
       try { logStream.write(`\n[LAUNCHER] spawn error: ${err && err.message}\n`); } catch (e) {}
