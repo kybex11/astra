@@ -60,7 +60,7 @@ public abstract class TitleScreenMixin extends Screen {
         blit(poseStack, logoX, logoY, 0.0f, 0.0f, logoSize, logoSize, logoSize, logoSize);
 
         String title = "ASTRA CLIENT";
-        String ver = "v1.0.0 (1.16.5) | Esports Edition";
+        String ver = "v1.1.0 (1.16.5) | Esports Edition";
         font.drawShadow(poseStack, title, (width - font.width(title)) / 2.0f, logoY + logoSize + 6, accent);
         font.drawShadow(poseStack, ver, (width - font.width(ver)) / 2.0f, logoY + logoSize + 18, 0xFF94A3B8);
 

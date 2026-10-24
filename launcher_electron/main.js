@@ -33,8 +33,8 @@ function getProjectRoot() {
   for (const dir of candidates) {
     if (!dir) continue;
     try {
-      if (fs.existsSync(path.join(dir, 'installer', 'astra-1.0.0.jar'))) return dir;
-      if (fs.existsSync(path.join(dir, 'resources', 'astra-1.0.0.jar'))) return dir;
+      if (fs.existsSync(path.join(dir, 'installer', 'astra-1.1.0.jar')) || fs.existsSync(path.join(dir, 'installer', 'astra-1.0.0.jar'))) return dir;
+      if (fs.existsSync(path.join(dir, 'resources', 'astra-1.1.0.jar')) || fs.existsSync(path.join(dir, 'resources', 'astra-1.0.0.jar'))) return dir;
     } catch (e) {}
   }
   return candidates[candidates.length - 1];
@@ -229,10 +229,14 @@ function sendStatus(msg) {
 
 function findModJar(projectRoot) {
   const cands = [
+    path.join(projectRoot, 'build', 'libs', 'astra-1.1.0.jar'),
+    path.join(projectRoot, 'installer', 'astra-1.1.0.jar'),
+    path.join(projectRoot, 'resources', 'astra-1.1.0.jar'),
     path.join(projectRoot, 'build', 'libs', 'astra-1.0.0.jar'),
     path.join(projectRoot, 'installer', 'astra-1.0.0.jar'),
     path.join(projectRoot, 'resources', 'astra-1.0.0.jar'),
   ];
+  try { if (process.resourcesPath) cands.push(path.join(process.resourcesPath, 'astra-1.1.0.jar')); } catch (e) {}
   try { if (process.resourcesPath) cands.push(path.join(process.resourcesPath, 'astra-1.0.0.jar')); } catch (e) {}
   for (const c of cands) {
     try { if (fs.existsSync(c)) return c; } catch (e) {}
@@ -261,21 +265,19 @@ ipcMain.on('launch-game', (event, { username, ram }) => {
       const modJar = findModJar(projectRoot);
       const modsDir = path.join(process.env.APPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Roaming'), '.minecraft', 'mods');
       let copied = false;
+      const targetJarName = modJar ? path.basename(modJar) : 'astra-1.1.0.jar';
       try {
-        if (modJar && fs.existsSync(modsDir)) {
-          fs.copyFileSync(modJar, path.join(modsDir, 'astra-1.0.0.jar'));
-          copied = true;
-        } else if (modJar) {
-          fs.mkdirSync(modsDir, { recursive: true });
-          fs.copyFileSync(modJar, path.join(modsDir, 'astra-1.0.0.jar'));
+        if (modJar) {
+          if (!fs.existsSync(modsDir)) fs.mkdirSync(modsDir, { recursive: true });
+          fs.copyFileSync(modJar, path.join(modsDir, targetJarName));
           copied = true;
         }
       } catch (e) { copied = false; }
       sendStatus({
         success: false,
         message: copied
-          ? 'Мод скопирован в .minecraft/mods. Выберите Fabric 1.16.5 в лаунчере Minecraft и нажмите Играть (RShift — меню).'
-          : 'Не найден gradle-проект. Установите Fabric Loader 1.16.5 и скопируйте astra-1.0.0.jar из installer/ в %APPDATA%/.minecraft/mods.'
+          ? `Мод ${targetJarName} скопирован в .minecraft/mods. Запустите Fabric 1.16.5.`
+          : 'Не найден gradle-проект. Установите Fabric Loader 1.16.5 и скопируйте astra-1.1.0.jar в %APPDATA%/.minecraft/mods.'
       });
       return;
     }
