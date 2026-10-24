@@ -61,7 +61,7 @@ public class WebGuiScreen extends Screen {
         RenderUtils.drawRoundedRect(poseStack, winX + 16, winY + 16, 28, 28, 6, accent);
         font.drawShadow(poseStack, "★", winX + 25, winY + 24, 0xFFFFFFFF);
         font.drawShadow(poseStack, "ASTRA", winX + 50, winY + 18, 0xFFFFFFFF);
-        font.drawShadow(poseStack, "Ultralight OSR", winX + 50, winY + 30, 0xFF94A3B8);
+        font.drawShadow(poseStack, "Web Dashboard", winX + 50, winY + 30, 0xFF94A3B8);
 
         // Category Navigation Tabs
         int tabY = winY + 60;
@@ -80,7 +80,7 @@ public class WebGuiScreen extends Screen {
         // Status Indicator at bottom of sidebar
         int dotY = winY + winH - 22;
         RenderUtils.drawCircle(poseStack, winX + 20, dotY + 4, 3, 0xFF10B981);
-        font.drawShadow(poseStack, "Ultralight Active", winX + 28, dotY, 0xFF94A3B8);
+        font.drawShadow(poseStack, "Live Bridge Active", winX + 28, dotY, 0xFF94A3B8);
 
         // 4. Content Panel Top Bar
         int contentX = winX + sideW + 18;

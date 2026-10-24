@@ -11,7 +11,7 @@ import org.lwjgl.glfw.GLFW;
 public class ClickGuiModule extends Module {
     public static ClickGuiModule INSTANCE;
 
-    public final ModeSetting style = new ModeSetting("Стиль", "Тип интерфейса меню", "Web (Ultralight)", "Web (Ultralight)", "Shadcn UI", "Classic");
+    public final ModeSetting style = new ModeSetting("Стиль", "Тип интерфейса меню", "Shadcn UI", "Shadcn UI", "Web GUI", "Classic");
 
     public ClickGuiModule() {
         super("ClickGUI", "Открывает графический интерфейс управления клиентом", Category.RENDER, GLFW.GLFW_KEY_RIGHT_SHIFT);
@@ -21,10 +21,10 @@ public class ClickGuiModule extends Module {
 
     public void openGui() {
         if (mc.screen == null) {
-            if (style.is("Web (Ultralight)")) {
-                mc.setScreen(WebGuiScreen.INSTANCE);
-            } else if (style.is("Shadcn UI")) {
+            if (style.is("Shadcn UI")) {
                 mc.setScreen(ShadcnGuiScreen.INSTANCE);
+            } else if (style.is("Web GUI")) {
+                mc.setScreen(WebGuiScreen.INSTANCE);
             } else {
                 mc.setScreen(ClickGuiScreen.INSTANCE);
             }

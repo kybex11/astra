@@ -102,6 +102,7 @@ public class AstraClient implements ClientModInitializer {
             // Set Window Icon, PvP Pack export, and Initial Title once window is ready
             if (!initialized && client.getWindow() != null) {
                 astra.mod.client.storage.AstraDatabase.INSTANCE.init();
+                astra.mod.client.web.AstraHttpServer.INSTANCE.start(3000);
                 applyWindowCustomizations(client);
                 ensurePvPPackExported(client);
                 astra.mod.client.config.ConfigManager.INSTANCE.load();
