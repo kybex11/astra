@@ -198,7 +198,10 @@ public class HudRenderer {
         poseStack.scale(scale, scale, 1.0f);
 
         int startX = (int) ((HudConfig.INSTANCE.armorX == -1 ? (screenW / 2 + 95) : HudConfig.INSTANCE.armorX) / scale);
-        int startY = (int) ((HudConfig.INSTANCE.armorY == -1 ? (screenH - 22) : HudConfig.INSTANCE.armorY) / scale);
+        int defaultArmorY = screenH - 40;
+        int startY = (int) ((HudConfig.INSTANCE.armorY == -1 ? defaultArmorY : HudConfig.INSTANCE.armorY) / scale);
+        // Ensure armor icons never go off-screen at the bottom or top
+        startY = Math.max(5, Math.min(startY, (int) ((screenH - 22) / scale)));
 
         RenderSystem.enableBlend();
         for (ItemStack stack : items) {
@@ -375,12 +378,17 @@ public class HudRenderer {
         }
 
         float scale = HudConfig.INSTANCE.getScale("effects");
+        int screenH = mc.getWindow().getGuiScaledHeight();
         poseStack.pushPose();
         poseStack.scale(scale, scale, 1.0f);
         int x = (int) (startX / scale);
         int y = (int) (startY / scale);
 
         for (net.minecraft.world.effect.MobEffectInstance inst : mc.player.getActiveEffects()) {
+            if (y + 14 > (screenH / scale) - 6) {
+                x -= 120;
+                y = (int) (startY / scale);
+            }
             String name;
             try {
                 name = inst.getEffect().getDisplayName().getString();
@@ -583,7 +591,7 @@ public class HudRenderer {
         // 1. Full Square container utilization
         RenderUtils.drawBorderedRect(poseStack, mapX, mapY, mapSize, mapSize, 1, 0xF00B0F19, 0xFF334155);
 
-        // 2. Surface Mapping
+        // 2. Surface Mapping (stable surface heightmap, immune to player jumping)
         int playerX = (int) mc.player.getX();
         int playerY = (int) mc.player.getY();
         int playerZ = (int) mc.player.getZ();
@@ -594,14 +602,21 @@ public class HudRenderer {
             for (int rZ = -intRange; rZ <= intRange; rZ += step) {
                 int worldX = playerX + rX;
                 int worldZ = playerZ + rZ;
-                net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(worldX, playerY, worldZ);
 
-                net.minecraft.world.level.block.state.BlockState state = mc.level.getBlockState(pos);
-                int mapCol = state.getMaterial().getColor().col;
-                if (mapCol == 0) {
-                    mapCol = mc.level.getBlockState(pos.below()).getMaterial().getColor().col;
-                }
-                if (mapCol == 0) mapCol = 0x2D3748;
+                int mapCol = 0x2D3748;
+                try {
+                    int surfaceY = (mc.level.dimension() == net.minecraft.world.level.Level.NETHER)
+                            ? playerY
+                            : mc.level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, worldX, worldZ) - 1;
+
+                    net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(worldX, surfaceY, worldZ);
+                    net.minecraft.world.level.block.state.BlockState state = mc.level.getBlockState(pos);
+                    mapCol = state.getMaterial().getColor().col;
+                    if (mapCol == 0) {
+                        mapCol = mc.level.getBlockState(pos.below()).getMaterial().getColor().col;
+                    }
+                    if (mapCol == 0) mapCol = 0x2D3748;
+                } catch (Exception ignored) {}
 
                 float px = cx + ((float) rX / (float) intRange) * (radius - 4);
                 float py = cy + ((float) rZ / (float) intRange) * (radius - 4);

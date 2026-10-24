@@ -69,14 +69,21 @@ public class WorldMapScreen extends Screen {
             for (int rz = -viewRadius; rz <= viewRadius; rz += step) {
                 int wx = playerBaseX + rx;
                 int wz = playerBaseZ + rz;
-                BlockPos pos = new BlockPos(wx, playerBaseY, wz);
 
-                BlockState state = mc.level.getBlockState(pos);
-                int mapCol = state.getMaterial().getColor().col;
-                if (mapCol == 0) {
-                    mapCol = mc.level.getBlockState(pos.below()).getMaterial().getColor().col;
-                }
-                if (mapCol == 0) mapCol = 0x222C3C;
+                int mapCol = 0x222C3C;
+                try {
+                    int surfaceY = (mc.level.dimension() == net.minecraft.world.level.Level.NETHER)
+                            ? playerBaseY
+                            : mc.level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, wx, wz) - 1;
+
+                    BlockPos pos = new BlockPos(wx, surfaceY, wz);
+                    BlockState state = mc.level.getBlockState(pos);
+                    mapCol = state.getMaterial().getColor().col;
+                    if (mapCol == 0) {
+                        mapCol = mc.level.getBlockState(pos.below()).getMaterial().getColor().col;
+                    }
+                    if (mapCol == 0) mapCol = 0x222C3C;
+                } catch (Exception ignored) {}
 
                 float screenX = (float) (centerX + rx * zoom);
                 float screenY = (float) (centerY + rz * zoom);

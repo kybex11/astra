@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Astra Client Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo-box">
+        <div class="logo-icon">★</div>
+        <div class="logo-text">
+          <h2>ASTRA</h2>
+          <span>Ultralight OSR</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" id="categoryTabs">
+        <button class="tab-btn active" data-cat="COMBAT">
+          <span class="icon">⚔️</span> Combat
+        </button>
+        <button class="tab-btn" data-cat="MOVEMENT">
+          <span class="icon">🏃</span> Movement
+        </button>
+        <button class="tab-btn" data-cat="RENDER">
+          <span class="icon">👁️</span> Render
+        </button>
+        <button class="tab-btn" data-cat="PLAYER">
+          <span class="icon">👤</span> Player
+        </button>
+        <button class="tab-btn" data-cat="HUD">
+          <span class="icon">📊</span> HUD
+        </button>
+        <button class="tab-btn" data-cat="MISC">
+          <span class="icon">⚙️</span> Misc
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>Ultralight Active</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-panel">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Поиск модулей (Fly, KillAura, ESP...)...">
+        </div>
+
+        <div class="top-actions">
+          <div class="theme-picker" id="themePicker">
+            <span class="theme-dot indigo active" data-theme="Indigo"></span>
+            <span class="theme-dot cyan" data-theme="Cyan"></span>
+            <span class="theme-dot emerald" data-theme="Emerald"></span>
+            <span class="theme-dot crimson" data-theme="Crimson"></span>
+            <span class="theme-dot sunset" data-theme="Sunset"></span>
+          </div>
+          <button class="close-btn" id="closeBtn" title="Закрыть (ESC)">✕</button>
+        </div>
+      </header>
+
+      <!-- Modules Grid -->
+      <section class="modules-container">
+        <div class="category-header">
+          <h1 id="currentCatTitle">Combat</h1>
+          <span class="badge" id="moduleCountBadge">0 модулей</span>
+        </div>
+
+        <div class="modules-grid" id="modulesGrid">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

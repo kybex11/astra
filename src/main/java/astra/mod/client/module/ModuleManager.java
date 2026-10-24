@@ -102,6 +102,8 @@ public class ModuleManager {
         register(new MobSize());
         register(new NametagMod());
         register(new Waypoints());
+        register(new JumpCircles());
+        register(new TargetESP());
         register(new OofMod());
 
         // Misc

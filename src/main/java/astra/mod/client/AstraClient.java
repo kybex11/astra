@@ -89,6 +89,12 @@ public class AstraClient implements ClientModInitializer {
             if (astra.mod.client.module.impl.render.Waypoints.INSTANCE != null) {
                 astra.mod.client.module.impl.render.Waypoints.INSTANCE.render3D(context.matrixStack(), context.camera(), context.tickDelta());
             }
+            if (astra.mod.client.module.impl.render.JumpCircles.INSTANCE != null) {
+                astra.mod.client.module.impl.render.JumpCircles.INSTANCE.render3D(context.matrixStack(), context.camera(), context.tickDelta());
+            }
+            if (astra.mod.client.module.impl.render.TargetESP.INSTANCE != null) {
+                astra.mod.client.module.impl.render.TargetESP.INSTANCE.render3D(context.matrixStack(), context.camera(), context.tickDelta());
+            }
         });
 
         // Client Tick Handler
@@ -115,7 +121,11 @@ public class AstraClient implements ClientModInitializer {
                 // Check key mapping click
                 while (clickGuiKey.consumeClick()) {
                     if (client.screen == null) {
-                        client.setScreen(ShadcnGuiScreen.INSTANCE);
+                        if (astra.mod.client.module.impl.render.ClickGuiModule.INSTANCE != null) {
+                            astra.mod.client.module.impl.render.ClickGuiModule.INSTANCE.openGui();
+                        } else {
+                            client.setScreen(astra.mod.client.web.WebGuiScreen.INSTANCE);
+                        }
                     }
                 }
 

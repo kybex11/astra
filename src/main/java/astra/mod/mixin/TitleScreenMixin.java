@@ -117,7 +117,11 @@ public abstract class TitleScreenMixin extends Screen {
                 minecraft.setScreen(new JoinMultiplayerScreen(this));
                 cir.setReturnValue(true);
             } else if (astra_isInside(mouseX, mouseY, startX, startY + 52, btnW, btnH)) {
-                minecraft.setScreen(ClickGuiScreen.INSTANCE);
+                if (astra.mod.client.module.impl.render.ClickGuiModule.INSTANCE != null) {
+                    astra.mod.client.module.impl.render.ClickGuiModule.INSTANCE.openGui();
+                } else {
+                    minecraft.setScreen(astra.mod.client.web.WebGuiScreen.INSTANCE);
+                }
                 cir.setReturnValue(true);
             } else if (astra_isInside(mouseX, mouseY, startX, startY + 78, btnW, btnH)) {
                 minecraft.setScreen(HudEditorScreen.INSTANCE);
